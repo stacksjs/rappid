@@ -37,7 +37,17 @@ const related = product
 const pageTitle = product ? `${product.title} - rappid.` : 'not found - rappid.'
 const pageDescription = product ? (product.intro || `${product.title} from rappid.`) : 'That product is not in the range.'
 const canonicalPath = `/products/${handle}`
-const ogImage = frames[0]?.full ?? ''
+/*
+ * The generated card is the preview, not the raw studio shot: it is already
+ * 1.91:1, and it carries the brand, the price and the sizes left. `ogImageAlt`
+ * describes that card, which is what a screen reader announces beside the
+ * link.
+ */
+const ogType = 'product'
+const ogImageAlt = product ? `${product.title}, ${product.available ? 'in stock' : 'sold out'} at rappid.` : ''
+const productMeta = product
+  ? { price: product.price.toFixed(2), availability: product.available ? 'in stock' : 'out of stock' }
+  : undefined
 
 const jsonLd = product
   ? JSON.stringify({

@@ -4,6 +4,7 @@ import { itemsIn } from '../data/collections'
 const pageTitle = 'not found - rappid.'
 const pageDescription = 'That page is not here.'
 const canonicalPath = '/404'
+const noindex = true
 
 /* A dead end is a good place to show what is actually in stock. */
 const picks = itemsIn('new-arrivals').slice(0, 4)

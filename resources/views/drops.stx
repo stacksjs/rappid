@@ -6,7 +6,6 @@ import { at, shots } from '../data/media'
 const pageTitle = 'drops - rappid.'
 const pageDescription = 'Every rappid. capsule, what is still in stock in each, and what has closed.'
 const canonicalPath = '/drops'
-const ogImage = at(shots.lastSoul, 1200)
 
 /*
  * A capsule's state is derived, never declared: how many pieces it holds and

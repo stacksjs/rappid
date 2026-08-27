@@ -4,6 +4,8 @@ import { brand } from '../data/site'
 const pageTitle = 'your bag - rappid.'
 const pageDescription = 'The pieces you have picked, with sizes and totals.'
 const canonicalPath = '/cart'
+// Personal, per-visitor state. Nothing here is worth ranking.
+const noindex = true
 </script>
 <!DOCTYPE html>
 <html lang="en">

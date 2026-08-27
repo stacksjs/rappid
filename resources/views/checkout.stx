@@ -2,6 +2,7 @@
 const pageTitle = 'checkout - rappid.'
 const pageDescription = 'Checkout is handled by the payment provider.'
 const canonicalPath = '/checkout'
+const noindex = true
 </script>
 <!DOCTYPE html>
 <html lang="en">

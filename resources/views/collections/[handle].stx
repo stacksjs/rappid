@@ -53,7 +53,14 @@ const cover = all.find(p => p.images.length)?.images[0]
 const pageTitle = collection ? `${collection.title} - rappid.` : 'collection not found - rappid.'
 const pageDescription = collection ? collection.blurb : 'That collection does not exist.'
 const canonicalPath = `/collections/${handle}`
-const ogImage = cover ? image(cover.src, 1200) : ''
+/*
+ * A filtered or re-sorted grid is a real, linkable state, but it is the same
+ * products as the collection it came from. Indexing every size-and-sort
+ * permutation would spend the crawl budget on near-duplicates of a page that
+ * is already indexed, and the canonical above already points back at the
+ * unfiltered collection.
+ */
+const noindex = filtered || sort !== 'new'
 </script>
 <!DOCTYPE html>
 <html lang="en">

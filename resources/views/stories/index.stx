@@ -5,7 +5,6 @@ import { readMinutes, stories, storyDate, storyImage } from '../../data/stories'
 const pageTitle = 'stories - rappid.'
 const pageDescription = 'Long reads from the races behind the brand: the Last Soul Ultra, 382 kilometres in Texas, 515 kilometres across Lapland.'
 const canonicalPath = '/stories'
-const ogImage = storyImage(stories[0], 1200)
 
 const lead = stories[0]
 const rest = stories.slice(1)

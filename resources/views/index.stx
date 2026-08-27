@@ -8,7 +8,6 @@ import { readMinutes, stories, storyDate, storyImage } from '../data/stories'
 const pageTitle = 'rappid. - running apparel built for the distance'
 const pageDescription = 'Performance running apparel from rappid. Tops, bottoms and caps made for long efforts, designed in Bochum and worn at the Last Soul Ultra.'
 const canonicalPath = '/'
-const ogImage = at(shots.hero, 1200)
 
 const newArrivals = itemsIn('new-arrivals')
 const arrivals = newArrivals.slice(0, 8)

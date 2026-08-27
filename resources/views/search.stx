@@ -37,6 +37,9 @@ const suggestions = ['storm jacket', 'pace cap', 'tights', 'long sleeve', 'banda
 const pageTitle = term ? `${term} - search - rappid.` : 'search - rappid.'
 const pageDescription = 'Search the rappid. range.'
 const canonicalPath = '/search'
+// Every query string is a distinct URL, so an indexable search page is an
+// unbounded crawl surface that ranks for nothing.
+const noindex = true
 </script>
 <!DOCTYPE html>
 <html lang="en">

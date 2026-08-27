@@ -8,7 +8,9 @@ const more = story ? otherStories(slug, 3) : []
 const pageTitle = story ? `${story.title} - rappid.` : 'story not found - rappid.'
 const pageDescription = story ? story.excerpt : 'That story is not here.'
 const canonicalPath = `/stories/${slug}`
-const ogImage = story ? storyImage(story, 1200) : ''
+const ogType = 'article'
+const ogImageAlt = story ? story.imageAlt : ''
+const articleMeta = story ? { published: story.date, author: story.author } : undefined
 
 /*
  * The pull quote is lifted out of the flow roughly a third of the way in,
