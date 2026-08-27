@@ -12,6 +12,7 @@ const path = typeof current !== 'undefined' ? String(current) : '/'
 
 const primary = [
   { label: 'new arrivals', href: '/collections/new-arrivals' },
+  { label: 'athletes', href: '/athletes' },
   { label: 'stories', href: '/stories' },
 ]
 

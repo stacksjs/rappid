@@ -58,6 +58,7 @@ const year = 2026
             <li><a class="panel-muted hover:opacity-100 transition-opacity" href="/collections/all-products">all products</a></li>
             <li><a class="panel-muted hover:opacity-100 transition-opacity" href="/collections/new-arrivals">new arrivals</a></li>
             <li><a class="panel-muted hover:opacity-100 transition-opacity" href="/drops">next drops</a></li>
+            <li><a class="panel-muted hover:opacity-100 transition-opacity" href="/athletes">athletes</a></li>
             <li><a class="panel-muted hover:opacity-100 transition-opacity" href="/stories">stories</a></li>
             <li><a class="panel-muted hover:opacity-100 transition-opacity" href="/returns">returns</a></li>
           </ul>

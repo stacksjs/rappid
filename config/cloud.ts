@@ -164,6 +164,14 @@ export const tsCloud: TsCloudConfig = {
       path: '/',
       domain: APP_DOMAIN,
       start: 'bun node_modules/@stacksjs/buddy/dist/serve-entry.js',
+      /*
+       * Build-time-only source art. The social cards are generated into
+       * `public/social` and shipped there; the originals they are drawn from
+       * are only needed by `buddy generate:images`, which runs here and not on
+       * the box. Leaving them in put 4.7MB of images the server never reads
+       * into every release, on top of the 6.8MB of cards it does.
+       */
+      exclude: ['resources/assets/images/products', 'resources/assets/images/social'],
       port: PORT_MAIN,
       // Markers between steps, kept deliberately: the remote log interleaves
       // commands with no delimiters, and a failing command's stderr attaches
@@ -198,6 +206,13 @@ export const tsCloud: TsCloudConfig = {
       root: '.',
       start: 'bun node_modules/@stacksjs/actions/dist/serve/api.js',
       port: PORT_API,
+      // The API renders no cards at all, so it needs neither the sources nor
+      // the generated set.
+      exclude: [
+        'resources/assets/images/products',
+        'resources/assets/images/social',
+        'public/social',
+      ],
       // No migrate here: `main` owns the schema, and running two migrations
       // against one shared database is how a deploy races itself.
       preStart: ['bun install --frozen-lockfile'],

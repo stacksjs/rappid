@@ -171,6 +171,13 @@ export default {
         foreground: 'resources/assets/images/social/last-soul.jpg',
       },
       {
+        path: '/athletes',
+        eyebrow: 'athletes',
+        title: 'the people in the kit.',
+        subtitle: 'Kim Gottwald and Pawel Dregan, and the results behind the gear.',
+        foreground: 'resources/assets/images/social/go-one-more.jpg',
+      },
+      {
         path: '/stories',
         eyebrow: 'stories',
         title: 'stories from the runs.',

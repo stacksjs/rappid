@@ -1,0 +1,184 @@
+<script server>
+import { athletes, longestRace } from '../data/athletes'
+import { at, shots } from '../data/media'
+import { brand } from '../data/site'
+
+const pageTitle = 'athletes - rappid.'
+const pageDescription = 'The runners who race in rappid. kit: Kim Gottwald and Paweł Dregan, and the results behind the gear.'
+const canonicalPath = '/athletes'
+
+const longest = longestRace()
+
+const jsonLd = JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'ItemList',
+  'name': 'rappid. athletes',
+  'itemListElement': athletes.map((athlete, index) => ({
+    '@type': 'ListItem',
+    'position': index + 1,
+    'item': {
+      '@type': 'Person',
+      'name': athlete.name,
+      'jobTitle': athlete.role,
+      'image': athlete.portrait,
+      'url': `${brand.url}/athletes#${athlete.slug}`,
+    },
+  })),
+})
+</script>
+<!DOCTYPE html>
+<html lang="en">
+  <head>@include('head')</head>
+  <body>
+    <SiteNav current="/athletes" />
+
+    <main id="main">
+      {{-- The claim the whole brand rests on is that the people who make the
+        kit race in it, so the header states the roster's size plainly rather
+        than implying a squad. --}}
+      <div class="max-w-[1500px] mx-auto px-5 lg:px-8">
+        <header class="pt-12 lg:pt-16 pb-10 border-b rule">
+          <h1 class="text-4xl sm:text-6xl lg:text-7xl tracking-[-0.035em] leading-[0.98] max-w-[14ch]">the people in the kit.</h1>
+          <p class="mt-5 text-base sm:text-lg muted max-w-[60ch] leading-relaxed">
+            Two runners race for rappid. One of them makes it. Everything below is a result somebody actually recorded, with the distance and the time as the organiser published them.
+          </p>
+
+          <dl class="grid grid-cols-2 sm:grid-cols-4 gap-6 mt-10 max-w-3xl">
+            <div>
+              <dt class="text-xs mono uppercase tracking-[0.14em] faint">athletes</dt>
+              <dd class="mt-1.5 text-3xl mono tabular-nums ink">{{ athletes.length }}</dd>
+            </div>
+            <div>
+              <dt class="text-xs mono uppercase tracking-[0.14em] faint">longest race</dt>
+              <dd class="mt-1.5 text-3xl mono tabular-nums ink">{{ longest }}<span class="text-base faint ml-1">km</span></dd>
+            </div>
+            <div>
+              <dt class="text-xs mono uppercase tracking-[0.14em] faint">coldest</dt>
+              <dd class="mt-1.5 text-3xl mono tabular-nums ink">-20<span class="text-base faint ml-1">°c</span></dd>
+            </div>
+            <div>
+              <dt class="text-xs mono uppercase tracking-[0.14em] faint">hottest</dt>
+              <dd class="mt-1.5 text-3xl mono tabular-nums ink">37<span class="text-base faint ml-1">°c</span></dd>
+            </div>
+          </dl>
+        </header>
+      </div>
+
+      {{-- One full-width block per athlete: portrait on one side, the reading
+        on the other, results underneath as a real table. Two athletes is too
+        few for a card grid, which would leave the row looking unfinished. --}}
+      @foreach(athletes as athlete)
+        <section class="border-b rule" id="{{ athlete.slug }}" data-reveal>
+          <div class="max-w-[1500px] mx-auto px-5 lg:px-8 py-12 lg:py-20">
+            <div class="grid lg:grid-cols-12 gap-8 lg:gap-14">
+              <div class="lg:col-span-5 reveal-item">
+                <div class="relative aspect-[4/5] surface-sunken overflow-hidden">
+                  <img
+                    class="absolute inset-0 w-full h-full object-cover"
+                    src="{{ athlete.portrait }}&width=900"
+                    alt="{{ athlete.portraitAlt }}"
+                    width="900"
+                    height="1125"
+                    loading="lazy"
+                    decoding="async"
+                  >
+                </div>
+              </div>
+
+              <div class="lg:col-span-7 reveal-item">
+                <p class="text-xs mono uppercase tracking-[0.16em] accent">{{ athlete.role }}</p>
+                <h2 class="mt-3 text-3xl sm:text-4xl lg:text-5xl tracking-[-0.03em] leading-[1.02]">{{ athlete.name }}</h2>
+                <p class="mt-4 text-lg muted max-w-[52ch] leading-relaxed">{{ athlete.standfirst }}</p>
+
+                <dl class="flex flex-wrap gap-x-10 gap-y-4 mt-7 pt-6 border-t rule">
+                  <div>
+                    <dt class="text-xs mono uppercase tracking-[0.14em] faint">based in</dt>
+                    <dd class="mt-1 text-sm ink">{{ athlete.basedIn }}</dd>
+                  </div>
+                  <div>
+                    <dt class="text-xs mono uppercase tracking-[0.14em] faint">races</dt>
+                    <dd class="mt-1 text-sm ink">{{ athlete.discipline }}</dd>
+                  </div>
+                </dl>
+
+                <div class="prose mt-7">
+                  @foreach(athlete.bio as paragraph)
+                    <p class="text-[0.9375rem] muted">{{ paragraph }}</p>
+                  @endforeach
+                </div>
+
+                <div class="flex flex-wrap items-center gap-x-5 gap-y-3 mt-7">
+                  @if(athlete.story)
+                    <a class="btn btn-outline" href="/stories/{{ athlete.story.slug }}">read {{ athlete.story.title }}</a>
+                  @endif
+                  @foreach(athlete.links as link)
+                    <a class="text-sm ink underlink" href="{{ link.href }}" target="_blank" rel="noopener">{{ link.label }}</a>
+                  @endforeach
+                </div>
+              </div>
+            </div>
+
+            {{-- Results as a table, because that is what they are. A row per
+              race with the distance and the time beside it reads faster than
+              the same facts wrapped into sentences. --}}
+            <div class="mt-12 lg:mt-16 reveal-item">
+              <h3 class="text-xs mono uppercase tracking-[0.16em] faint mb-4">selected results</h3>
+              <div class="overflow-x-auto">
+                <table class="w-full min-w-[34rem] border-collapse text-sm">
+                  <caption class="sr-only">Published race results for {{ athlete.name }}</caption>
+                  <thead>
+                    <tr class="border-b rule-strong">
+                      <th class="text-left py-3 pr-4 text-xs mono uppercase tracking-[0.14em] faint font-normal w-16" scope="col">year</th>
+                      <th class="text-left py-3 pr-4 text-xs mono uppercase tracking-[0.14em] faint font-normal" scope="col">race</th>
+                      <th class="text-left py-3 text-xs mono uppercase tracking-[0.14em] faint font-normal" scope="col">result</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @foreach(athlete.results as result)
+                      <tr class="border-b rule">
+                        <th class="text-left py-3.5 pr-4 mono tabular-nums faint font-normal align-top" scope="row">{{ result.year }}</th>
+                        <td class="py-3.5 pr-4 align-top {{ result.highlight ? 'ink' : 'muted' }}">{{ result.race }}</td>
+                        <td class="py-3.5 mono tabular-nums align-top {{ result.highlight ? 'ink' : 'muted' }}">{{ result.detail }}</td>
+                      </tr>
+                    @endforeach
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+      @endforeach
+
+      {{-- The kit is the point of the page, so it ends on it. --}}
+      <section class="ink-panel" data-reveal>
+        <div class="max-w-[1500px] mx-auto grid lg:grid-cols-12">
+          <div class="lg:col-span-5 reveal-item">
+            <div class="relative aspect-[4/5] lg:h-full lg:aspect-auto overflow-hidden">
+              <img
+                class="absolute inset-0 w-full h-full object-cover"
+                src="{{ at(shots.goOneMore, 900) }}"
+                alt="{{ shots.goOneMore.alt }}"
+                width="900"
+                height="1200"
+                loading="lazy"
+                decoding="async"
+              >
+            </div>
+          </div>
+          <div class="lg:col-span-7 px-5 lg:px-14 py-12 lg:py-20 flex flex-col justify-center reveal-item">
+            <h2 class="text-3xl sm:text-4xl lg:text-5xl tracking-[-0.025em] leading-[1.05] max-w-[20ch]">the same kit, on sale.</h2>
+            <p class="mt-5 text-base sm:text-lg panel-muted max-w-[54ch] leading-relaxed">
+              Nothing on this page was raced in a prototype. The storm jacket, the tights and the caps in these results are the ones in the shop, which is the only reason to trust either.
+            </p>
+            <div class="flex flex-wrap gap-3 mt-8">
+              <a class="btn btn-on-panel" href="/collections/all-products">shop the range</a>
+              <a class="btn btn-outline" style="border-color: var(--panel-line); color: var(--panel-ink)" href="/stories">read the race reports</a>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <SiteFooter />
+  </body>
+</html>
