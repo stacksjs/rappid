@@ -2,8 +2,50 @@ import type { CloudConfig } from '@stacksjs/types'
 import type { CloudConfig as TsCloudConfig } from '@stacksjs/ts-cloud'
 import { env } from '@stacksjs/env'
 
+/**
+ * The slug names the files this deploy OWNS on the box:
+ * `/etc/rpx/sites.d/<slug>.json` and the `rpx-cert-renew-<slug>.*` units. The
+ * fragment is replaced wholesale, so a slug that collides with another
+ * tenant's silently takes over its routes and TLS. It must be unique across
+ * every project attached to this box, and it must never equal `attachTo`.
+ */
 const APP_SLUG = 'rappid'
 const APP_DOMAIN = env.APP_DOMAIN || 'rappid.hq.training'
+
+/**
+ * Ports on the shared box.
+ *
+ * Read from a live `ss -lntp` on the box, not from another project's config:
+ * those list what a project declares, not what is bound, and they miss any
+ * tenant not checked out locally. Two services CAN bind one port here (the
+ * kernel load-balances between them rather than refusing the second), so a
+ * collision shows up as two domains serving each other's site half the time.
+ *
+ * 3190/3191 were free on 2026-08-27; the highest neighbour was 3188.
+ */
+const PORT_MAIN = 3190
+const PORT_API = 3191
+
+/**
+ * State that must outlive a release.
+ *
+ * Deploys are atomic: each activates a new release directory and the previous
+ * one is pruned, so anything written inside a release is destroyed by the next
+ * deploy. The SQLite database therefore lives outside the release tree and is
+ * symlinked in, which is also what makes a rollback find the same data.
+ *
+ * The FILE is shared, not the `database/` directory: sharing the directory
+ * would replace the release's `database/migrations/*.sql` too, so `migrate`
+ * would find no migrations, report the database up to date, and serve a schema
+ * that only ever got the framework's own tables.
+ */
+const STATE_DIR = '/var/lib/rappid'
+
+function sharedState(seed: boolean) {
+  return [
+    { path: 'database/stacks.sqlite', target: `${STATE_DIR}/stacks.sqlite`, seed },
+  ]
+}
 
 /**
  * Cloud configuration — rappid.
@@ -108,28 +150,65 @@ export const tsCloud: TsCloudConfig = {
    */
   sites: {
     /**
-     * The storefront. A single Bun process serving the stx views.
+     * The storefront: the stx views, and the proxy in front of the API.
      *
-     * There is no API site and no database: every page renders from the typed
-     * modules in `resources/data`, so the whole site is one process reading
-     * its own source. `serve-entry.js` is the framework's own production
-     * entry, which means no hand-written server file to drift from it.
+     * Every page renders from the typed modules in `resources/data`, so the
+     * catalogue needs no database. The one thing that does is the newsletter
+     * form in the footer, which posts to the framework's own
+     * `POST /api/email/subscribe` and writes a `SubscriberEmail` row. That is
+     * the whole reason this deploy carries an API process and a SQLite file:
+     * a drop announcement list the brand actually relies on.
      *
-     * Port 3190 is this tenant's slot on the shared box. It is bound to
-     * localhost and fronted by rpx; ports are picked from what is actually
-     * listening on the box (`ss -lntp`), not from what other configs claim,
-     * because two tenants binding one port fails silently for the loser.
+     * `serve-entry.js` is the framework's own production entry, so there is no
+     * hand-written server file here to drift from it.
      */
     main: {
       root: '.',
       path: '/',
       domain: APP_DOMAIN,
       start: 'bun node_modules/@stacksjs/buddy/dist/serve-entry.js',
-      port: 3190,
-      // Install from the committed lockfile on the box. No migrate step:
-      // this app has no database.
+      port: PORT_MAIN,
+      // The main site runs the migration that creates the database, so it is
+      // the site that may seed the shared target.
+      sharedPaths: sharedState(true),
+      // Markers between steps, kept deliberately: the remote log interleaves
+      // commands with no delimiters, and a failing command's stderr attaches
+      // itself to whichever command last flushed.
+      preStart: [
+        'echo "[rappid] preStart: install"',
+        'bun install --frozen-lockfile',
+        'echo "[rappid] preStart: migrate"',
+        // `buddy deploy` splices `db:backup --before-migrations` in front of
+        // this line and derives that invocation from it, so how this is
+        // written decides how the backup is taken.
+        'bun node_modules/@stacksjs/buddy/dist/cli.js migrate',
+        'echo "[rappid] preStart: done"',
+      ],
+      env: {
+        APP_ENV: 'production',
+        NODE_ENV: 'production',
+        APP_URL: `https://${APP_DOMAIN}`,
+        // Both are read: PORT_API is what the page server's proxy dials,
+        // API_URL is what anything resolving an absolute API base uses.
+        PORT_API: String(PORT_API),
+        API_URL: `http://127.0.0.1:${PORT_API}`,
+      },
+    },
+
+    /**
+     * The API process, on loopback only. The public site proxies `/api/**` and
+     * every mutating verb to it. No `domain`, so rpx skips it and the box
+     * firewall keeps the port off the public network.
+     */
+    api: {
+      root: '.',
+      start: 'bun node_modules/@stacksjs/actions/dist/serve/api.js',
+      port: PORT_API,
+      // The same database file as main, and explicitly not the seeder.
+      sharedPaths: sharedState(false),
       preStart: ['bun install --frozen-lockfile'],
       env: {
+        HOST: '127.0.0.1',
         APP_ENV: 'production',
         NODE_ENV: 'production',
         APP_URL: `https://${APP_DOMAIN}`,
