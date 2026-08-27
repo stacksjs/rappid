@@ -1,0 +1,277 @@
+<script server>
+import { brand, dropsMenu, markets, shopMenu } from '../data/site'
+
+/*
+ * The two mega menus are the same trees the collection pages read, so the
+ * menu can never offer a collection that has no page.
+ *
+ * `current` is the path of the page including this nav. It drives
+ * aria-current, which is what paints the active underline.
+ */
+const path = typeof current !== 'undefined' ? String(current) : '/'
+
+const primary = [
+  { label: 'new arrivals', href: '/collections/new-arrivals' },
+  { label: 'stories', href: '/stories' },
+]
+
+const shopFeature = {
+  href: '/collections/atv-collection',
+  label: 'atv collection',
+  note: 'shell, half zip, tights, caps',
+  image: 'https://cdn.shopify.com/s/files/1/0862/1765/4598/files/13storm-jacket_1.jpg?width=560',
+}
+
+const dropsFeature = {
+  href: '/collections/last-soul-ultra-2026',
+  label: 'last soul ultra 2026',
+  note: 'the october backyard capsule',
+  image: 'https://cdn.shopify.com/s/files/1/0862/1765/4598/files/Tight_short_1.jpg?width=560',
+}
+</script>
+
+<script client>
+/*
+ * One signal owns which overlay is open: 'shop', 'drops', 'search', 'mobile'
+ * or ''. A single owner means opening one panel closes the others without
+ * any pair of booleans getting out of step.
+ */
+const panel = state('')
+const mobileSection = state('')
+
+function toggle(name: string): void {
+  panel.update(v => (v === name ? '' : name))
+}
+
+function close(): void {
+  panel.set('')
+  mobileSection.set('')
+}
+
+function toggleSection(name: string): void {
+  mobileSection.update(v => (v === name ? '' : name))
+}
+</script>
+
+<template>
+  <header class="sticky top-0 z-40 page-bg border-b rule" @keydown.escape="close()">
+    <div class="flex items-center justify-between gap-6 px-5 lg:px-8 h-16">
+      <div class="flex items-center gap-1">
+        <a href="/" class="block h-4 mr-5 lg:mr-7 ink" aria-label="rappid. home">
+          <Wordmark />
+        </a>
+
+        <nav class="hidden lg:flex items-center" aria-label="primary">
+          <button
+            type="button"
+            class="px-3 py-2 text-sm ink hover:opacity-60 transition-opacity"
+            :class="panel() === 'shop' ? 'opacity-60' : ''"
+            aria-haspopup="true"
+            :aria-expanded="panel() === 'shop' ? 'true' : 'false'"
+            @click="toggle('shop')"
+          >shop</button>
+
+          <button
+            type="button"
+            class="px-3 py-2 text-sm ink hover:opacity-60 transition-opacity"
+            :class="panel() === 'drops' ? 'opacity-60' : ''"
+            aria-haspopup="true"
+            :aria-expanded="panel() === 'drops' ? 'true' : 'false'"
+            @click="toggle('drops')"
+          >next drops</button>
+
+          @foreach(primary as item)
+            <a
+              class="px-3 py-2 text-sm ink hover:opacity-60 transition-opacity"
+              href="{{ item.href }}"
+              @if(path === item.href) aria-current="page" @endif
+            >{{ item.label }}</a>
+          @endforeach
+
+          <button
+            type="button"
+            class="px-3 py-2 text-sm ink hover:opacity-60 transition-opacity"
+            :aria-expanded="panel() === 'search' ? 'true' : 'false'"
+            @click="toggle('search')"
+          >search</button>
+        </nav>
+      </div>
+
+      <div class="flex items-center gap-1">
+        <div class="hidden sm:flex items-center border rule">
+          @foreach(markets as market)
+            <button
+              type="button"
+              class="market-pick px-2.5 py-1.5 text-xs mono uppercase muted hover:opacity-100 transition-opacity"
+              data-market-pick="{{ market.code }}"
+              aria-label="prices in {{ market.currency }}"
+            >{{ market.symbol }}</button>
+          @endforeach
+        </div>
+
+        <button
+          type="button"
+          class="p-2.5 ink hover:opacity-60 transition-opacity"
+          data-theme-toggle
+          aria-label="switch theme"
+          onclick="window.rappidTheme()"
+        >
+          <i class="i-hugeicons-moon-02 block w-4 h-4 theme-icon-dark" aria-hidden="true"></i>
+          <i class="i-hugeicons-sun-03 block w-4 h-4 theme-icon-light" aria-hidden="true"></i>
+        </button>
+
+        <a href="/cart" class="flex items-center gap-1.5 px-3 py-2 text-sm ink hover:opacity-60 transition-opacity">
+          bag
+          <span class="min-w-[1.25rem] h-5 px-1 accent-bg text-[11px] mono flex items-center justify-center" data-bag-count hidden></span>
+        </a>
+
+        <button
+          type="button"
+          class="lg:hidden p-2.5 ink"
+          :aria-expanded="panel() === 'mobile' ? 'true' : 'false'"
+          aria-label="menu"
+          @click="toggle('mobile')"
+        >
+          <i class="block w-5 h-5" :class="panel() === 'mobile' ? 'i-hugeicons-cancel-01' : 'i-hugeicons-menu-02'" aria-hidden="true"></i>
+        </button>
+      </div>
+    </div>
+
+    {{-- A backdrop under every open desktop panel: it dims the page so the
+      menu reads as being in front of it, and gives the click-anywhere-to-close
+      that people expect from a dropdown. --}}
+    <button
+      :if="panel() === 'shop' || panel() === 'drops' || panel() === 'search'"
+      type="button"
+      class="hidden lg:block fixed inset-0 top-16 -z-10 cursor-default"
+      style="background: var(--scrim)"
+      aria-label="close menu"
+      @click="close()"
+      x-cloak
+    ></button>
+
+    {{-- Mega menus. Each is a real column tree plus one campaign tile, so the
+      menu shows the season rather than only listing it. --}}
+    <div
+      :if="panel() === 'shop' || panel() === 'drops'"
+      class="hidden lg:block absolute left-0 right-0 top-16 page-bg border-b rule"
+      x-cloak
+    >
+      <div class="grid grid-cols-12 gap-8 px-8 py-10 max-w-[1500px] mx-auto">
+        <div :if="panel() === 'shop'" class="col-span-8 grid grid-cols-4 gap-8">
+          <div>
+            <a class="text-sm ink underlink" href="/collections/all-products">all products</a>
+          </div>
+          @foreach(shopMenu as group)
+            <div>
+              <a class="block text-sm ink underlink mb-4" href="{{ group.href }}">{{ group.title }}</a>
+              <ul class="space-y-2.5">
+                @foreach(group.items as item)
+                  <li><a class="text-sm muted hover:ink transition-colors" href="{{ item.href }}">{{ item.label }}</a></li>
+                @endforeach
+              </ul>
+            </div>
+          @endforeach
+        </div>
+
+        <div :if="panel() === 'drops'" class="col-span-8 grid grid-cols-4 gap-8">
+          <div>
+            <a class="text-sm ink underlink" href="/drops">drop calendar</a>
+          </div>
+          @foreach(dropsMenu as group)
+            <div>
+              <a class="block text-sm ink underlink mb-4" href="{{ group.href }}">{{ group.title }}</a>
+              <ul class="space-y-2.5">
+                @foreach(group.items as item)
+                  <li><a class="text-sm muted hover:ink transition-colors" href="{{ item.href }}">{{ item.label }}</a></li>
+                @endforeach
+              </ul>
+            </div>
+          @endforeach
+        </div>
+
+        <a :if="panel() === 'shop'" class="col-span-4 tile group" href="{{ shopFeature.href }}">
+          <div class="tile-media relative aspect-[4/3]">
+            <img src="{{ shopFeature.image }}" alt="{{ shopFeature.label }}" width="560" height="420" loading="lazy">
+          </div>
+          <p class="mt-3 text-sm ink">{{ shopFeature.label }}</p>
+          <p class="text-sm muted">{{ shopFeature.note }}</p>
+        </a>
+
+        <a :if="panel() === 'drops'" class="col-span-4 tile group" href="{{ dropsFeature.href }}">
+          <div class="tile-media relative aspect-[4/3]">
+            <img src="{{ dropsFeature.image }}" alt="{{ dropsFeature.label }}" width="560" height="420" loading="lazy">
+          </div>
+          <p class="mt-3 text-sm ink">{{ dropsFeature.label }}</p>
+          <p class="text-sm muted">{{ dropsFeature.note }}</p>
+        </a>
+      </div>
+    </div>
+
+    {{-- Search opens where the eye already is, and submits to /search, which
+      filters the catalogue as you type. --}}
+    <div :if="panel() === 'search'" class="hidden lg:block absolute left-0 right-0 top-16 page-bg border-b rule" x-cloak>
+      <form class="px-8 py-10 max-w-[1500px] mx-auto" action="/search" method="get" role="search">
+        <label class="block text-xs uppercase tracking-[0.14em] muted mb-3" for="nav-search">search the range</label>
+        <div class="flex items-end gap-4">
+          <input id="nav-search" class="field text-2xl" type="search" name="q" placeholder="storm jacket, pace cap, tights" autocomplete="off">
+          <button class="btn btn-solid" type="submit">search</button>
+        </div>
+      </form>
+    </div>
+
+    {{-- Mobile panel: the same two trees as accordions, so no link that
+      exists on desktop goes missing on a phone. --}}
+    <div :if="panel() === 'mobile'" class="lg:hidden page-bg border-t rule max-h-[calc(100dvh-4rem)] overflow-y-auto" x-cloak>
+      <form class="px-5 py-5 border-b rule" action="/search" method="get" role="search">
+        <input class="field" type="search" name="q" placeholder="search the range" aria-label="search the range">
+      </form>
+
+      <button type="button" class="w-full flex items-center justify-between px-5 py-4 border-b rule text-left text-sm ink" @click="toggleSection('shop')">
+        shop
+        <i class="w-4 h-4" :class="mobileSection() === 'shop' ? 'i-hugeicons-minus-sign' : 'i-hugeicons-plus-sign'" aria-hidden="true"></i>
+      </button>
+      <div :if="mobileSection() === 'shop'" class="px-5 py-4 border-b rule surface-sunken" x-cloak>
+        <a class="block py-1.5 text-sm ink" href="/collections/all-products">all products</a>
+        @foreach(shopMenu as group)
+          <p class="mt-4 mb-1 text-xs uppercase tracking-[0.14em] faint">{{ group.title }}</p>
+          <a class="block py-1.5 text-sm ink" href="{{ group.href }}">all {{ group.title }}</a>
+          @foreach(group.items as item)
+            <a class="block py-1.5 text-sm muted" href="{{ item.href }}">{{ item.label }}</a>
+          @endforeach
+        @endforeach
+      </div>
+
+      <button type="button" class="w-full flex items-center justify-between px-5 py-4 border-b rule text-left text-sm ink" @click="toggleSection('drops')">
+        next drops
+        <i class="w-4 h-4" :class="mobileSection() === 'drops' ? 'i-hugeicons-minus-sign' : 'i-hugeicons-plus-sign'" aria-hidden="true"></i>
+      </button>
+      <div :if="mobileSection() === 'drops'" class="px-5 py-4 border-b rule surface-sunken" x-cloak>
+        <a class="block py-1.5 text-sm ink" href="/drops">drop calendar</a>
+        @foreach(dropsMenu as group)
+          <p class="mt-4 mb-1 text-xs uppercase tracking-[0.14em] faint">{{ group.title }}</p>
+          @foreach(group.items as item)
+            <a class="block py-1.5 text-sm muted" href="{{ item.href }}">{{ item.label }}</a>
+          @endforeach
+        @endforeach
+      </div>
+
+      @foreach(primary as item)
+        <a class="block px-5 py-4 border-b rule text-sm ink" href="{{ item.href }}">{{ item.label }}</a>
+      @endforeach
+
+      <div class="flex items-center gap-2 px-5 py-5">
+        <span class="text-xs uppercase tracking-[0.14em] faint mr-2">currency</span>
+        @foreach(markets as market)
+          <button
+            type="button"
+            class="market-pick px-3 py-2 border rule text-xs mono uppercase muted"
+            data-market-pick="{{ market.code }}"
+          >{{ market.symbol }} {{ market.currency }}</button>
+        @endforeach
+      </div>
+
+      <a class="block px-5 pb-6 text-sm ink underlink" href="{{ brand.marathonSignup }}" target="_blank" rel="noopener">rappid. marathon sign-up</a>
+    </div>
+  </header>
+</template>

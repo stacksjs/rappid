@@ -1,0 +1,135 @@
+<script server>
+import { image } from '../data/catalog'
+import { collectionByHandle, itemsIn } from '../data/collections'
+import { at, shots } from '../data/media'
+
+const pageTitle = 'drops - rappid.'
+const pageDescription = 'Every rappid. capsule, what is still in stock in each, and what has closed.'
+const canonicalPath = '/drops'
+const ogImage = at(shots.lastSoul, 1200)
+
+/*
+ * A capsule's state is derived, never declared: how many pieces it holds and
+ * how many sizes are still buyable. A drop is "closed" when nothing in it is
+ * left, which is the only definition that cannot go stale.
+ */
+function capsule(handle: string, shot: { src: string, alt: string }) {
+  const collection = collectionByHandle(handle)
+  const items = itemsIn(handle)
+  const live = items.filter(p => p.available)
+  return {
+    handle,
+    title: collection?.title ?? handle,
+    blurb: collection?.blurb ?? '',
+    shot,
+    total: items.length,
+    live: live.length,
+    open: live.length > 0,
+    newest: items.map(p => p.publishedAt).sort().at(-1) ?? '',
+  }
+}
+
+const capsules = [
+  capsule('last-soul-ultra-2026', { src: shots.lastSoul.src, alt: shots.lastSoul.alt }),
+  capsule('atv-collection', { src: shots.tops.src, alt: shots.tops.alt }),
+  capsule('collegial-hoodies', { src: shots.goOneMore.src, alt: shots.goOneMore.alt }),
+]
+
+const MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december']
+
+function monthOf(iso: string): string {
+  if (!iso) return ''
+  const [y, m] = iso.split('-')
+  return `${MONTHS[Number(m) - 1]} ${y}`
+}
+</script>
+<!DOCTYPE html>
+<html lang="en">
+  <head>@include('head')</head>
+  <body>
+    <SiteNav current="/drops" />
+
+    <main id="main">
+      <div class="max-w-[1500px] mx-auto px-5 lg:px-8">
+        <header class="pt-12 lg:pt-16 pb-10 border-b rule">
+          <h1 class="text-4xl sm:text-6xl lg:text-7xl tracking-[-0.035em] leading-[0.98] max-w-[12ch]">the drops.</h1>
+          <p class="mt-5 text-base sm:text-lg muted max-w-[58ch]">
+            rappid. releases in capsules rather than seasons. Each one is made for a specific race, in a run that ends when it ends. What is below is live stock, counted now.
+          </p>
+          <p class="mt-4 text-sm muted">
+            New drops are announced to the mailing list. There is a sign-up at the bottom of this page.
+          </p>
+        </header>
+
+        <div class="divide-y rule" data-reveal>
+          @foreach(capsules as drop)
+            <article class="grid lg:grid-cols-12 gap-6 lg:gap-12 py-10 lg:py-14 items-center reveal-item">
+              <a class="lg:col-span-5 tile group block" href="/collections/{{ drop.handle }}">
+                <div class="tile-media relative aspect-[16/10]">
+                  <img
+                    class="absolute inset-0 w-full h-full object-cover"
+                    src="{{ drop.shot.src }}?width=900"
+                    alt="{{ drop.shot.alt }}"
+                    width="900"
+                    height="563"
+                    loading="lazy"
+                    decoding="async"
+                  >
+                </div>
+              </a>
+
+              <div class="lg:col-span-7">
+                <p class="flex items-center gap-2.5 text-xs mono uppercase tracking-[0.16em]">
+                  @if(drop.open)
+                    <span class="w-1.5 h-1.5 accent-bg" aria-hidden="true"></span>
+                    <span class="accent">open now</span>
+                  @else
+                    <span class="w-1.5 h-1.5" style="background: var(--ink-faint)" aria-hidden="true"></span>
+                    <span class="faint">closed</span>
+                  @endif
+                  @if(drop.newest)
+                    <span class="faint">released {{ monthOf(drop.newest) }}</span>
+                  @endif
+                </p>
+
+                <h2 class="mt-3 text-3xl sm:text-4xl tracking-[-0.025em] leading-[1.05]">{{ drop.title }}</h2>
+                <p class="mt-3 text-base muted max-w-[54ch]">{{ drop.blurb }}</p>
+
+                <dl class="flex gap-10 mt-6">
+                  <div>
+                    <dt class="text-xs mono uppercase tracking-[0.14em] faint">pieces</dt>
+                    <dd class="mt-1 text-2xl mono tabular-nums ink">{{ drop.total }}</dd>
+                  </div>
+                  <div>
+                    <dt class="text-xs mono uppercase tracking-[0.14em] faint">still in stock</dt>
+                    <dd class="mt-1 text-2xl mono tabular-nums {{ drop.live ? 'ink' : 'faint' }}">{{ drop.live }}</dd>
+                  </div>
+                </dl>
+
+                <div class="flex flex-wrap gap-3 mt-7">
+                  @if(drop.open)
+                    <a class="btn btn-solid" href="/collections/{{ drop.handle }}">shop the capsule</a>
+                  @else
+                    <a class="btn btn-outline" href="/collections/{{ drop.handle }}">see what it was</a>
+                  @endif
+                </div>
+              </div>
+            </article>
+          @endforeach
+        </div>
+
+        <section class="py-14 lg:py-20 border-t rule" data-reveal>
+          <div class="reveal-item max-w-[62ch]">
+            <h2 class="text-2xl sm:text-3xl tracking-[-0.02em]">what happens between drops.</h2>
+            <p class="mt-4 text-base muted leading-relaxed">
+              A core range is being built alongside the capsules: a never-out-of-stock line so the pieces people wear every week stay available instead of disappearing with a drop. Socks, beanies and other essentials are part of the same plan.
+            </p>
+            <a class="inline-block mt-5 text-sm ink underlink" href="/stories/the-story-behind-rappid">read where that is going</a>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <SiteFooter />
+  </body>
+</html>

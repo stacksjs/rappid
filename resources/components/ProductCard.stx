@@ -1,0 +1,71 @@
+<script server>
+import { image, sizesInStock } from '../data/catalog'
+
+/*
+ * A grid tile that answers the two questions the old grid did not: which
+ * sizes are left, and is anything left at all. The size row is the real
+ * variant list, so a runner in XS knows before the click.
+ */
+const p = product
+const cover = p.images[0]
+const alternate = p.images[1]
+const inStock = sizesInStock(p)
+const isOneSize = p.variants.length === 1
+const nearlyGone = p.available && !isOneSize && inStock.length > 0 && inStock.length <= 2
+const width = typeof size !== 'undefined' && size === 'lg' ? 900 : 600
+</script>
+
+<template>
+  <a class="tile group block" href="/products/{{ p.handle }}">
+    <div class="tile-media relative aspect-[4/5]">
+      @if(cover)
+        <img
+          src="{{ image(cover.src, width) }}"
+          alt="{{ p.title }}"
+          width="{{ width }}"
+          height="{{ Math.round(width * 1.25) }}"
+          loading="lazy"
+          decoding="async"
+        >
+      @endif
+      @if(alternate)
+        <img
+          class="tile-alt"
+          src="{{ image(alternate.src, width) }}"
+          alt=""
+          width="{{ width }}"
+          height="{{ Math.round(width * 1.25) }}"
+          loading="lazy"
+          decoding="async"
+          aria-hidden="true"
+        >
+      @endif
+      @if(nearlyGone)
+        <span class="absolute top-3 left-3 accent-bg px-2 py-1 text-[11px] mono uppercase tracking-wider">{{ inStock.length }} left</span>
+      @endif
+    </div>
+
+    <div class="flex items-baseline justify-between gap-4 mt-3">
+      <p class="text-sm ink">{{ p.title }}</p>
+      @if(p.available)
+        <p class="text-sm ink shrink-0"><Price :amount="p.price" /></p>
+      @else
+        <p class="text-sm faint shrink-0">sold out</p>
+      @endif
+    </div>
+
+    @if(p.available && !isOneSize)
+      <p class="mt-1.5 text-xs mono faint tracking-wide">
+        @foreach(p.variants as variant)
+          <span class="{{ variant.available ? 'muted' : 'line-through opacity-40' }}">{{ variant.size }}</span>
+        @endforeach
+      </p>
+    @endif
+    @if(p.available && isOneSize)
+      <p class="mt-1.5 text-xs mono muted tracking-wide">one size</p>
+    @endif
+    @if(!p.available)
+      <p class="mt-1.5 text-xs mono faint tracking-wide">back in stock soon</p>
+    @endif
+  </a>
+</template>

@@ -1,0 +1,48 @@
+<script server>
+import { brand } from '../data/site'
+
+const pageTitle = 'your bag - rappid.'
+const pageDescription = 'The pieces you have picked, with sizes and totals.'
+const canonicalPath = '/cart'
+</script>
+<!DOCTYPE html>
+<html lang="en">
+  <head>@include('head')</head>
+  <body>
+    <SiteNav current="/cart" />
+
+    <main id="main" class="max-w-[1100px] mx-auto px-5 lg:px-8 py-10 lg:py-16">
+      <h1 class="text-4xl sm:text-5xl tracking-[-0.03em]">your bag</h1>
+
+      {{-- Both states ship in the markup and the bag script reveals whichever
+        is true, so the page never flashes an empty bag at someone who has
+        one. --}}
+      <div data-bag-empty hidden>
+        <p class="mt-4 text-base muted max-w-[46ch]">Nothing in here yet. The bag is held in this browser, so it will still be here when you come back.</p>
+        <div class="flex flex-wrap gap-3 mt-8">
+          <a class="btn btn-solid" href="/collections/new-arrivals">shop new arrivals</a>
+          <a class="btn btn-outline" href="/collections/all-products">browse the range</a>
+        </div>
+      </div>
+
+      <div data-bag-filled hidden>
+        <ul class="mt-8 border-t rule" data-bag-list></ul>
+
+        <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pt-8">
+          <div class="text-sm muted max-w-[42ch]">
+            <p>Free shipping over €60, otherwise a flat €5.49. Orders leave within three business days.</p>
+            <p class="mt-1.5">{{ brand.returnDays }} days to send anything back unworn. <a class="ink underlink" href="/returns">how it works</a></p>
+          </div>
+
+          <div class="sm:text-right">
+            <p class="text-xs mono uppercase tracking-[0.14em] faint">subtotal</p>
+            <p class="mt-1 text-3xl mono tabular-nums ink" data-bag-total>-</p>
+            <a class="btn btn-solid mt-4 w-full sm:w-auto" href="/checkout">checkout</a>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <SiteFooter />
+  </body>
+</html>

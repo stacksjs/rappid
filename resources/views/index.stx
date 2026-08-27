@@ -1,0 +1,330 @@
+<script server>
+import { products } from '../data/catalog'
+import { itemsIn } from '../data/collections'
+import { at, shots, srcset } from '../data/media'
+import { brand } from '../data/site'
+import { readMinutes, stories, storyDate, storyImage } from '../data/stories'
+
+const pageTitle = 'rappid. - running apparel built for the distance'
+const pageDescription = 'Performance running apparel from rappid. Tops, bottoms and caps made for long efforts, designed in Bochum and worn at the Last Soul Ultra.'
+const canonicalPath = '/'
+const ogImage = at(shots.hero, 1200)
+
+const newArrivals = itemsIn('new-arrivals')
+const arrivals = newArrivals.slice(0, 8)
+
+/*
+ * The two live capsules. Counting stock here rather than hard-coding a number
+ * means the band tells the truth on the day someone reads it.
+ */
+const lsu = itemsIn('last-soul-ultra-2026')
+const lsuLeft = lsu.filter(p => p.available).length
+
+const categories = [
+  { title: 'tops', href: '/collections/tops', shot: shots.tops, count: itemsIn('tops').length },
+  { title: 'bottoms', href: '/collections/bottoms', shot: shots.bottoms, count: itemsIn('bottoms').length },
+  { title: 'accessories', href: '/collections/accessories', shot: shots.accessories, count: itemsIn('accessories').length },
+]
+
+const lead = stories[0]
+const rest = stories.slice(1, 3)
+
+const jsonLd = JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  'name': 'rappid.',
+  'url': brand.url,
+  'slogan': brand.tagline,
+  'foundingDate': String(brand.founded),
+  'sameAs': ['https://www.instagram.com/rappid.run/'],
+})
+
+/* Each line here is the published policy, not a promise invented for a grid. */
+const service = [
+  { title: 'free shipping over €60', body: 'Under that it is a flat €5.49. Orders leave within three business days of the purchase.', href: '/legal/shipping', link: 'shipping policy' },
+  { title: `${brand.returnDays}-day returns`, body: 'Unworn, unused, in undamaged original packaging. Inside the DACH region the portal issues your label.', href: '/returns', link: 'how returns work' },
+  { title: 'sizes, counted live', body: 'Which sizes the range is cut in and how many pieces still hold yours, across tops and bottoms.', href: '/sizing', link: 'size availability' },
+]
+</script>
+<!DOCTYPE html>
+<html lang="en">
+  <head>@include('head')</head>
+  <body>
+    <SiteNav current="/" />
+
+    <main id="main">
+      {{-- 1. Hero. The frame does the talking, so the copy block is small and
+        sits in the dead space at the bottom left rather than centred over a
+        runner's face. --}}
+      <section class="relative">
+        <div class="relative aspect-[3/4] sm:aspect-[16/10] lg:aspect-[16/7] overflow-hidden surface-sunken">
+          <img
+            class="absolute inset-0 w-full h-full object-cover"
+            src="{{ at(shots.hero, 1600) }}"
+            srcset="{{ srcset(shots.hero, 900) }}"
+            sizes="100vw"
+            alt="{{ shots.hero.alt }}"
+            width="1600"
+            height="900"
+            fetchpriority="high"
+            decoding="async"
+          >
+          {{-- Two scrims, not one: bottom-up for the copy block, and a softer
+            left-to-right so the headline still clears 4.5:1 where it crosses
+            the runner's white shirt. --}}
+          <div
+            class="absolute inset-0"
+            style="background:
+              linear-gradient(to top, rgb(0 0 0 / 0.84) 0%, rgb(0 0 0 / 0.58) 34%, rgb(0 0 0 / 0.2) 62%, rgb(0 0 0 / 0) 86%),
+              linear-gradient(to right, rgb(0 0 0 / 0.5) 0%, rgb(0 0 0 / 0.12) 48%, rgb(0 0 0 / 0) 70%)"
+          ></div>
+
+          <div class="absolute inset-x-0 bottom-0 px-5 lg:px-8 pb-8 lg:pb-12">
+            <div class="max-w-[1500px] mx-auto text-white">
+              <h1 class="text-[2.5rem] leading-[0.95] sm:text-6xl lg:text-7xl xl:text-8xl tracking-[-0.03em] max-w-[16ch]">
+                gear that lasts<br>longer than you do.
+              </h1>
+              <p class="mt-5 text-base sm:text-lg max-w-[46ch] opacity-85">
+                Built in Bochum, tested at 382 kilometres in Texas heat and 67 hours of a backyard ultra. If it fails, we find out first.
+              </p>
+              <div class="flex flex-wrap gap-3 mt-8">
+                <a class="btn" style="background: #fff; color: #0d0d0d; border-color: #fff" href="/collections/new-arrivals">shop new arrivals</a>
+                <a class="btn" style="border-color: rgb(255 255 255 / 0.55); color: #fff" href="/stories/last-soul-ultra">read the 67 hours</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {{-- 2. The live capsule. A band rather than another product row, so the
+        drop reads as an event and the stock number is the headline fact. --}}
+      <section class="border-b rule" data-reveal>
+        <div class="max-w-[1500px] mx-auto grid lg:grid-cols-12 items-stretch">
+          <div class="lg:col-span-7 order-2 lg:order-1 px-5 lg:px-8 py-10 lg:py-14 flex flex-col justify-center reveal-item">
+            <p class="flex items-center gap-2.5 text-xs mono uppercase tracking-[0.16em]">
+              <span class="w-1.5 h-1.5 accent-bg" aria-hidden="true"></span>
+              <span class="accent">open now</span>
+            </p>
+            <h2 class="mt-4 text-3xl sm:text-4xl lg:text-5xl tracking-[-0.02em] leading-[1.02]">last soul ultra 2026</h2>
+            <p class="mt-4 text-base muted max-w-[52ch]">
+              The capsule made for the backyard ultra Kim won at round 67. Race shirts, short tights, caps and the bandana, in the colours that ran it.
+            </p>
+            <p class="mt-6 text-sm mono muted">
+              <span class="ink">{{ lsu.length }}</span> pieces
+              <span class="mx-2 faint" aria-hidden="true">/</span>
+              <span class="ink">{{ lsuLeft }}</span> still in stock
+            </p>
+            <div class="flex flex-wrap gap-3 mt-7">
+              <a class="btn btn-solid" href="/collections/last-soul-ultra-2026">shop the capsule</a>
+              <a class="btn btn-outline" href="/drops">see all drops</a>
+            </div>
+          </div>
+
+          <a class="lg:col-span-5 order-1 lg:order-2 tile block group border-l-0 lg:border-l rule reveal-item" href="/collections/last-soul-ultra-2026">
+            <div class="tile-media relative h-full min-h-[220px] aspect-[16/9] lg:aspect-auto">
+              <img
+                class="absolute inset-0 w-full h-full object-cover"
+                src="{{ at(shots.lastSoul, 900) }}"
+                alt="{{ shots.lastSoul.alt }}"
+                width="900"
+                height="506"
+                loading="lazy"
+                decoding="async"
+              >
+            </div>
+          </a>
+        </div>
+      </section>
+
+      {{-- 3. New arrivals, as a rail. A rail says "there is more of this" in a
+        way a truncated four-up grid does not. --}}
+      <section class="py-14 lg:py-20" data-reveal>
+        <div class="max-w-[1500px] mx-auto px-5 lg:px-8">
+          <div class="flex items-end justify-between gap-6 mb-8 reveal-item">
+            <div>
+              <p class="text-xs mono uppercase tracking-[0.16em] faint">new arrivals</p>
+              <h2 class="mt-2 text-3xl sm:text-4xl tracking-[-0.02em]">just landed.</h2>
+            </div>
+            <a class="text-sm ink underlink shrink-0 pb-1" href="/collections/new-arrivals">see all {{ newArrivals.length }}</a>
+          </div>
+        </div>
+
+        <div class="rail flex gap-4 sm:gap-6 overflow-x-auto px-5 lg:px-8 pb-2 reveal-item">
+          @foreach(arrivals as product)
+            <div class="w-[62vw] sm:w-[36vw] lg:w-[23vw] xl:w-[19vw] shrink-0">
+              <ProductCard :product="product" />
+            </div>
+          @endforeach
+          <a class="w-[62vw] sm:w-[36vw] lg:w-[23vw] xl:w-[19vw] shrink-0 flex flex-col justify-center items-start border rule px-6 py-8 hover:opacity-70 transition-opacity" href="/collections/all-products">
+            <p class="text-2xl tracking-tight">the full range</p>
+            <p class="mt-2 text-sm muted">{{ products.length }} pieces, every size we hold.</p>
+            <span class="mt-6 text-sm ink underlink">browse everything</span>
+          </a>
+        </div>
+      </section>
+
+      {{-- 4. Categories, as three tall frames. Portrait crops of real race
+        photography, not three identical squares of folded clothing. --}}
+      <section class="pb-14 lg:pb-20" data-reveal>
+        <div class="max-w-[1500px] mx-auto px-5 lg:px-8">
+          <div class="grid gap-4 sm:gap-6 sm:grid-cols-3">
+            @foreach(categories as category)
+              <a class="tile group block reveal-item" href="{{ category.href }}">
+                <div class="tile-media relative aspect-[3/4]">
+                  <img
+                    class="absolute inset-0 w-full h-full object-cover"
+                    src="{{ at(category.shot, 700) }}"
+                    alt="{{ category.shot.alt }}"
+                    width="700"
+                    height="933"
+                    loading="lazy"
+                    decoding="async"
+                  >
+                </div>
+                <div class="flex items-baseline justify-between gap-4 mt-3">
+                  <p class="text-2xl tracking-tight ink">{{ category.title }}</p>
+                  <p class="text-sm mono muted shrink-0">{{ category.count }} pieces</p>
+                </div>
+              </a>
+            @endforeach
+          </div>
+        </div>
+      </section>
+
+      {{-- 5. Why the brand exists. The old site printed this as a wall of
+        centred text; here the photograph carries half of it and the numbers
+        underneath are the proof. --}}
+      <section class="ink-panel" data-reveal>
+        <div class="max-w-[1500px] mx-auto grid lg:grid-cols-12 gap-0">
+          <div class="lg:col-span-5 reveal-item">
+            <div class="relative aspect-[4/5] lg:h-full lg:aspect-auto overflow-hidden">
+              <img
+                class="absolute inset-0 w-full h-full object-cover"
+                src="{{ at(shots.goOneMore, 900) }}"
+                alt="{{ shots.goOneMore.alt }}"
+                width="900"
+                height="1200"
+                loading="lazy"
+                decoding="async"
+              >
+            </div>
+          </div>
+
+          <div class="lg:col-span-7 px-5 lg:px-14 py-12 lg:py-20 flex flex-col justify-center reveal-item">
+            <h2 class="text-3xl sm:text-4xl lg:text-5xl tracking-[-0.025em] leading-[1.05] max-w-[20ch]">
+              {{ brand.tagline }}.
+            </h2>
+            <p class="mt-6 text-base sm:text-lg panel-muted max-w-[58ch] leading-relaxed">
+              rappid. started in 2023 with two people, a textile studio and no visibility at all. The visibility came from running: city to city through Euro 2024, the length of Germany on foot, then 56 hours and 382 kilometres in Texas heat.
+            </p>
+            <p class="mt-4 text-base panel-muted max-w-[58ch] leading-relaxed">
+              The gear came from the same place. Kim raced the whole of Texas in rappid. kit, and still does, because the fastest way to find a seam that fails at hour 40 is to be wearing it at hour 40.
+            </p>
+
+            <dl class="grid grid-cols-3 gap-6 mt-10 pt-8 border-t panel-rule max-w-2xl">
+              <div>
+                <dt class="text-xs mono uppercase tracking-[0.14em] panel-muted">longest race</dt>
+                <dd class="mt-2 text-3xl lg:text-4xl mono tracking-tight">67<span class="text-base panel-muted ml-1">h</span></dd>
+              </div>
+              <div>
+                <dt class="text-xs mono uppercase tracking-[0.14em] panel-muted">across germany</dt>
+                <dd class="mt-2 text-3xl lg:text-4xl mono tracking-tight">1160<span class="text-base panel-muted ml-1">km</span></dd>
+              </div>
+              <div>
+                <dt class="text-xs mono uppercase tracking-[0.14em] panel-muted">founded</dt>
+                <dd class="mt-2 text-3xl lg:text-4xl mono tracking-tight">{{ brand.founded }}</dd>
+              </div>
+            </dl>
+
+            <a class="btn btn-on-panel mt-10 self-start" href="/stories/the-story-behind-rappid">read the full story</a>
+          </div>
+        </div>
+      </section>
+
+      {{-- 6. Stories. One lead piece at full weight and two beside it, so the
+        section reads as a journal rather than three equal teasers. --}}
+      <section class="py-14 lg:py-20" data-reveal>
+        <div class="max-w-[1500px] mx-auto px-5 lg:px-8">
+          <div class="flex items-end justify-between gap-6 mb-8 reveal-item">
+            <div>
+              <p class="text-xs mono uppercase tracking-[0.16em] faint">stories</p>
+              <h2 class="mt-2 text-3xl sm:text-4xl tracking-[-0.02em]">from the runs.</h2>
+            </div>
+            <a class="text-sm ink underlink shrink-0 pb-1" href="/stories">all stories</a>
+          </div>
+
+          <div class="grid gap-8 lg:grid-cols-12 lg:gap-10">
+            <a class="lg:col-span-7 tile group block reveal-item" href="/stories/{{ lead.slug }}">
+              <div class="tile-media relative aspect-[16/10]">
+                <img
+                  class="absolute inset-0 w-full h-full object-cover"
+                  src="{{ storyImage(lead, 1000) }}"
+                  alt="{{ lead.imageAlt }}"
+                  width="1000"
+                  height="625"
+                  loading="lazy"
+                  decoding="async"
+                >
+              </div>
+              <p class="mt-5 text-xs mono uppercase tracking-[0.14em] faint">{{ storyDate(lead.date) }} <span class="mx-1.5" aria-hidden="true">/</span> {{ readMinutes(lead) }} min</p>
+              <h3 class="mt-2 text-2xl sm:text-3xl tracking-[-0.02em] leading-snug max-w-[24ch]">{{ lead.title }}</h3>
+              <p class="mt-3 text-sm muted max-w-[56ch]">{{ lead.excerpt }}</p>
+            </a>
+
+            <div class="lg:col-span-5 flex flex-col gap-8">
+              @foreach(rest as story)
+                <a class="tile group flex gap-5 reveal-item" href="/stories/{{ story.slug }}">
+                  <div class="tile-media relative w-28 sm:w-36 shrink-0 aspect-[3/4]">
+                    <img
+                      class="absolute inset-0 w-full h-full object-cover"
+                      src="{{ storyImage(story, 320) }}"
+                      alt="{{ story.imageAlt }}"
+                      width="288"
+                      height="384"
+                      loading="lazy"
+                      decoding="async"
+                    >
+                  </div>
+                  <div class="min-w-0">
+                    <p class="text-xs mono uppercase tracking-[0.14em] faint">{{ storyDate(story.date) }}</p>
+                    <h3 class="mt-2 text-lg sm:text-xl tracking-[-0.01em] leading-snug">{{ story.title }}</h3>
+                    <p class="mt-2 text-sm muted line-clamp-3">{{ story.excerpt }}</p>
+                  </div>
+                </a>
+              @endforeach
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {{-- 7. The race the brand actually runs. A real sign-up, not a slogan. --}}
+      <section class="border-y rule surface-sunken" data-reveal>
+        <div class="max-w-[1500px] mx-auto px-5 lg:px-8 py-14 lg:py-20 flex flex-col lg:flex-row lg:items-end justify-between gap-8 reveal-item">
+          <div>
+            <h2 class="text-3xl sm:text-4xl lg:text-5xl tracking-[-0.025em] leading-[1.05] max-w-[18ch]">run the rappid. marathon.</h2>
+            <p class="mt-4 text-base muted max-w-[52ch]">Our own race, open to anyone who wants a number on their chest. Registration runs through RaceResult.</p>
+          </div>
+          <a class="btn btn-solid shrink-0" href="{{ brand.marathonSignup }}" target="_blank" rel="noopener">
+            sign up
+            <i class="i-hugeicons-arrow-up-right-01 w-4 h-4" aria-hidden="true"></i>
+          </a>
+        </div>
+      </section>
+
+      {{-- 8. The three things people email about, answered before they email. --}}
+      <section class="py-14 lg:py-20" data-reveal>
+        <div class="max-w-[1500px] mx-auto px-5 lg:px-8 grid gap-8 sm:grid-cols-3 sm:gap-10">
+          @foreach(service as item)
+            <div class="reveal-item">
+              <h3 class="text-lg tracking-tight">{{ item.title }}</h3>
+              <p class="mt-2.5 text-sm muted max-w-[38ch] leading-relaxed">{{ item.body }}</p>
+              <a class="inline-block mt-4 text-sm ink underlink" href="{{ item.href }}">{{ item.link }}</a>
+            </div>
+          @endforeach
+        </div>
+      </section>
+    </main>
+
+    <SiteFooter />
+  </body>
+</html>

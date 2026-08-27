@@ -1,0 +1,77 @@
+{{-- One observer for the whole page. Sections opt in with [data-reveal] and
+  their children carry .reveal-item.
+
+  Two safety properties, because hiding content behind a script is only
+  acceptable if the content can never get stuck hidden:
+
+  1. The hidden state lives behind `html.js-reveal`, added only once the
+     observer is wired up. A blocked or failed script leaves a readable page.
+  2. If the observer turns out not to fire at all (it is unreliable in
+     offscreen and headless contexts), a single timer notices that nothing
+     revealed while a section was plainly in view, and drops the whole effect.
+
+  The stx client router swaps only <main>, so new sections that arrive from a
+  soft navigation are picked up by a MutationObserver rather than being left
+  unobserved and invisible. --}}
+<script>
+  ;(function () {
+    if (window.__rappidReveal) return
+    window.__rappidReveal = true
+
+    var reduce = false
+    try { reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches }
+    catch {}
+
+    if (reduce || !('IntersectionObserver' in window)) return
+    if (!document.querySelector('[data-reveal]')) return
+
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return
+        entry.target.classList.add('is-revealed')
+        observer.unobserve(entry.target)
+      })
+    }, { rootMargin: '0px 0px -12% 0px', threshold: 0.05 })
+
+    function scan() {
+      var targets = document.querySelectorAll('[data-reveal]:not([data-reveal-bound])')
+      targets.forEach(function (el) {
+        el.setAttribute('data-reveal-bound', '')
+        el.querySelectorAll('.reveal-item').forEach(function (child, i) {
+          child.style.setProperty('--i', String(Math.min(i, 8)))
+        })
+        observer.observe(el)
+      })
+    }
+
+    function giveUp() {
+      observer.disconnect()
+      document.documentElement.classList.remove('js-reveal')
+    }
+
+    document.documentElement.classList.add('js-reveal')
+    scan()
+
+    /*
+     * Sections that arrive from a soft navigation still need observing. Only
+     * main's direct children are watched: scan() writes a --i custom property
+     * onto descendants, and a subtree watcher would keep waking itself.
+     */
+    var main = document.querySelector('main')
+    if (main) {
+      var mutations = new MutationObserver(function () { scan() })
+      mutations.observe(main, { childList: true })
+    }
+
+    /*
+     * Self-heal: if a section is sitting in the viewport and still has not
+     * revealed, the observer is not working here. Show everything.
+     */
+    setTimeout(function () {
+      var stuck = document.querySelector('[data-reveal]:not(.is-revealed)')
+      if (!stuck) return
+      var box = stuck.getBoundingClientRect()
+      if (box.top < window.innerHeight && box.bottom > 0) giveUp()
+    }, 2000)
+  })()
+</script>

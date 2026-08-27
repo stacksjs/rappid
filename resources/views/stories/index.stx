@@ -1,0 +1,81 @@
+<script server>
+import { at, shots } from '../../data/media'
+import { readMinutes, stories, storyDate, storyImage } from '../../data/stories'
+
+const pageTitle = 'stories - rappid.'
+const pageDescription = 'Long reads from the races behind the brand: the Last Soul Ultra, 382 kilometres in Texas, 515 kilometres across Lapland.'
+const canonicalPath = '/stories'
+const ogImage = storyImage(stories[0], 1200)
+
+const lead = stories[0]
+const rest = stories.slice(1)
+</script>
+<!DOCTYPE html>
+<html lang="en">
+  <head>@include('head')</head>
+  <body>
+    <SiteNav current="/stories" />
+
+    <main id="main">
+      <div class="max-w-[1500px] mx-auto px-5 lg:px-8">
+        <header class="pt-12 lg:pt-16 pb-10 border-b rule">
+          <h1 class="text-4xl sm:text-6xl lg:text-7xl tracking-[-0.035em] leading-[0.98] max-w-[14ch]">stories from the runs.</h1>
+          <p class="mt-5 text-base sm:text-lg muted max-w-[58ch]">
+            Race reports and long reads, written by the people who ran them. Nothing here is a product page.
+          </p>
+        </header>
+
+        {{-- The newest piece gets the full width and a proper standfirst; the
+          rest are a two-column list. A journal, not a grid of teasers. --}}
+        <article class="py-12 lg:py-16 border-b rule" data-reveal>
+          <a class="tile group grid lg:grid-cols-12 gap-8 lg:gap-12 items-center reveal-item" href="/stories/{{ lead.slug }}">
+            <div class="lg:col-span-7">
+              <div class="tile-media relative aspect-[16/10]">
+                <img
+                  class="absolute inset-0 w-full h-full object-cover"
+                  src="{{ storyImage(lead, 1100) }}"
+                  alt="{{ lead.imageAlt }}"
+                  width="1100"
+                  height="688"
+                  fetchpriority="high"
+                  decoding="async"
+                >
+              </div>
+            </div>
+            <div class="lg:col-span-5">
+              <p class="text-xs mono uppercase tracking-[0.14em] faint">
+                latest <span class="mx-1.5" aria-hidden="true">/</span> {{ storyDate(lead.date) }} <span class="mx-1.5" aria-hidden="true">/</span> {{ readMinutes(lead) }} min
+              </p>
+              <h2 class="mt-3 text-3xl sm:text-4xl tracking-[-0.025em] leading-[1.08]">{{ lead.title }}</h2>
+              <p class="mt-4 text-base muted leading-relaxed max-w-[52ch]">{{ lead.excerpt }}</p>
+              <span class="inline-block mt-6 text-sm ink underlink">read it</span>
+            </div>
+          </a>
+        </article>
+
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-12 py-12 lg:py-16" data-reveal>
+          @foreach(rest as story)
+            <a class="tile group block reveal-item" href="/stories/{{ story.slug }}">
+              <div class="tile-media relative aspect-[3/2]">
+                <img
+                  class="absolute inset-0 w-full h-full object-cover"
+                  src="{{ storyImage(story, 640) }}"
+                  alt="{{ story.imageAlt }}"
+                  width="640"
+                  height="427"
+                  loading="lazy"
+                  decoding="async"
+                >
+              </div>
+              <p class="mt-4 text-xs mono uppercase tracking-[0.14em] faint">{{ storyDate(story.date) }} <span class="mx-1.5" aria-hidden="true">/</span> {{ readMinutes(story) }} min</p>
+              <h2 class="mt-2 text-xl sm:text-2xl tracking-[-0.015em] leading-snug">{{ story.title }}</h2>
+              <p class="mt-2.5 text-sm muted leading-relaxed">{{ story.excerpt }}</p>
+            </a>
+          @endforeach
+        </div>
+      </div>
+    </main>
+
+    <SiteFooter />
+  </body>
+</html>

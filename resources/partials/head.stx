@@ -1,0 +1,103 @@
+{{-- Shared <head> for every page.
+
+  Partials inherit the including page's scope, so each page declares
+  pageTitle, pageDescription and canonicalPath in its own <script server>
+  and this reads them. Optional values (jsonLd, ogImage) are guarded, so a
+  page with nothing to say about them simply does not declare them. --}}
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="{{ pageDescription }}">
+<title>{{ pageTitle }}</title>
+
+<link rel="canonical" href="https://rappid.run{{ canonicalPath }}">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f4f4f2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0b0b0b" media="(prefers-color-scheme: dark)">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="rappid.">
+<meta property="og:url" content="https://rappid.run{{ canonicalPath }}">
+<meta property="og:title" content="{{ pageTitle }}">
+<meta property="og:description" content="{{ pageDescription }}">
+@if (typeof ogImage !== 'undefined' && ogImage)
+  <meta property="og:image" content="{{ ogImage }}">
+@endif
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ pageTitle }}">
+<meta name="twitter:description" content="{{ pageDescription }}">
+
+{{-- Geist for everything, Geist Mono for prices, sizes and SKUs. Preconnect
+  so the hero paints without waiting on the font round trip. --}}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+
+{{-- Product images come from the store's own CDN. Warming the connection
+  here saves a handshake on the first card that paints. --}}
+<link rel="preconnect" href="https://cdn.shopify.com" crossorigin>
+
+<link rel="stylesheet" href="/assets/styles/rappid.css">
+
+@if (typeof jsonLd !== 'undefined' && jsonLd)
+  <script type="application/ld+json">{!! jsonLd !!}</script>
+@endif
+
+<script>
+  /*
+   * Theme, resolved before first paint so the page never flashes the wrong
+   * one. A saved choice wins over the operating system preference; only a
+   * visitor who has never chosen gets the OS answer.
+   */
+  ;(function () {
+    var saved = ''
+    try { saved = localStorage.getItem('rappid-theme') || '' }
+    catch {}
+
+    var prefersDark = false
+    try { prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches }
+    catch {}
+
+    var theme = (saved === 'light' || saved === 'dark') ? saved : (prefersDark ? 'dark' : 'light')
+    document.documentElement.setAttribute('data-theme', theme)
+
+    window.rappidTheme = function () {
+      var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'
+      try { localStorage.setItem('rappid-theme', next) }
+      catch {}
+      document.documentElement.setAttribute('data-theme', next)
+      document.querySelectorAll('[data-theme-toggle]').forEach(function (b) {
+        b.setAttribute('aria-label', next === 'dark' ? 'switch to light mode' : 'switch to dark mode')
+      })
+    }
+  })()
+</script>
+
+<script>
+  /*
+   * Market, resolved before first paint for the same reason as the theme:
+   * every price is already in the HTML in all three currencies and CSS picks
+   * one off this attribute, so setting it late would flash the wrong money.
+   */
+  ;(function () {
+    var allowed = ['de', 'gb', 'us']
+    var saved = ''
+    try { saved = localStorage.getItem('rappid-market') || '' }
+    catch {}
+
+    var market = allowed.indexOf(saved) !== -1 ? saved : 'de'
+    document.documentElement.setAttribute('data-market', market)
+
+    document.addEventListener('click', function (event) {
+      var button = event.target.closest ? event.target.closest('[data-market-pick]') : null
+      if (!button) return
+      var next = button.getAttribute('data-market-pick')
+      if (allowed.indexOf(next) === -1) return
+      try { localStorage.setItem('rappid-market', next) }
+      catch {}
+      document.documentElement.setAttribute('data-market', next)
+      // Prices in the HTML swap via CSS; the bag computes its totals in JS
+      // and has to be told.
+      document.dispatchEvent(new CustomEvent('rappid:market', { detail: next }))
+    })
+  })()
+</script>

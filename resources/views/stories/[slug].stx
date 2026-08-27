@@ -1,0 +1,120 @@
+<script server>
+import { otherStories, readMinutes, storyBySlug, storyDate, storyImage } from '../../data/stories'
+
+const slug = String(params?.slug ?? '')
+const story = storyBySlug(slug)
+const more = story ? otherStories(slug, 3) : []
+
+const pageTitle = story ? `${story.title} - rappid.` : 'story not found - rappid.'
+const pageDescription = story ? story.excerpt : 'That story is not here.'
+const canonicalPath = `/stories/${slug}`
+const ogImage = story ? storyImage(story, 1200) : ''
+
+/*
+ * The pull quote is lifted out of the flow roughly a third of the way in,
+ * which is where a long read starts to need a breath. Pieces with no quote
+ * worth lifting declare an empty one and simply do not get the block.
+ */
+const quoteAt = story && story.pullQuote ? Math.min(6, Math.floor(story.body.length / 3)) : -1
+
+const jsonLd = story
+  ? JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'Article',
+      'headline': story.title,
+      'datePublished': story.date,
+      'author': { '@type': 'Person', 'name': story.author },
+      'image': story.image,
+      'publisher': { '@type': 'Organization', 'name': 'rappid.' },
+    })
+  : ''
+</script>
+<!DOCTYPE html>
+<html lang="en">
+  <head>@include('head')</head>
+  <body>
+    <SiteNav current="/stories" />
+
+    <main id="main">
+      @if(!story)
+        <div class="max-w-[1500px] mx-auto px-5 lg:px-8 py-24 lg:py-32">
+          <p class="text-xs mono uppercase tracking-[0.16em] faint">404</p>
+          <h1 class="mt-3 text-4xl sm:text-5xl tracking-[-0.025em]">no story at that address.</h1>
+          <a class="btn btn-solid mt-8" href="/stories">all stories</a>
+        </div>
+      @else
+        <article>
+          <header class="max-w-[1500px] mx-auto px-5 lg:px-8 pt-10 lg:pt-14">
+            <a class="text-xs mono uppercase tracking-[0.14em] faint hover:ink transition-colors" href="/stories">back to stories</a>
+            <h1 class="mt-6 text-4xl sm:text-5xl lg:text-6xl tracking-[-0.035em] leading-[1.0] max-w-[20ch]">{{ story.title }}</h1>
+            <p class="mt-5 text-lg sm:text-xl muted max-w-[58ch] leading-relaxed">{{ story.excerpt }}</p>
+            <p class="mt-6 pb-8 text-xs mono uppercase tracking-[0.14em] faint">
+              {{ story.author }}
+              <span class="mx-2" aria-hidden="true">/</span>
+              {{ storyDate(story.date) }}
+              <span class="mx-2" aria-hidden="true">/</span>
+              {{ readMinutes(story) }} min read
+            </p>
+          </header>
+
+          <div class="relative aspect-[16/9] lg:aspect-[21/9] surface-sunken overflow-hidden">
+            <img
+              class="absolute inset-0 w-full h-full object-cover"
+              src="{{ storyImage(story, 1800) }}"
+              alt="{{ story.imageAlt }}"
+              width="1800"
+              height="771"
+              fetchpriority="high"
+              decoding="async"
+            >
+          </div>
+
+          <div class="max-w-[1500px] mx-auto px-5 lg:px-8">
+            <div class="max-w-[38rem] mx-auto py-14 lg:py-20 prose">
+              @foreach(story.body as paragraph)
+                <p class="text-[1.0625rem] ink">{{ paragraph }}</p>
+                @if(quoteAt >= 0 && story.body.indexOf(paragraph) === quoteAt)
+                  <blockquote class="my-12 lg:my-16 lg:-mx-16 border-l-2 rule-strong pl-6 lg:pl-10">
+                    <p class="text-2xl sm:text-3xl tracking-[-0.02em] leading-[1.25] ink">{{ story.pullQuote }}</p>
+                    @if(story.pullQuoteBy)
+                      <cite class="block mt-4 text-xs mono uppercase tracking-[0.14em] faint not-italic">{{ story.pullQuoteBy }}</cite>
+                    @endif
+                  </blockquote>
+                @endif
+              @endforeach
+            </div>
+          </div>
+        </article>
+
+        @if(more.length)
+          <section class="border-t rule py-14 lg:py-20" data-reveal>
+            <div class="max-w-[1500px] mx-auto px-5 lg:px-8">
+              <h2 class="text-2xl sm:text-3xl tracking-[-0.02em] mb-8 reveal-item">keep reading.</h2>
+              <div class="grid sm:grid-cols-3 gap-x-6 gap-y-10">
+                @foreach(more as other)
+                  <a class="tile group block reveal-item" href="/stories/{{ other.slug }}">
+                    <div class="tile-media relative aspect-[3/2]">
+                      <img
+                        class="absolute inset-0 w-full h-full object-cover"
+                        src="{{ storyImage(other, 640) }}"
+                        alt="{{ other.imageAlt }}"
+                        width="640"
+                        height="427"
+                        loading="lazy"
+                        decoding="async"
+                      >
+                    </div>
+                    <p class="mt-4 text-xs mono uppercase tracking-[0.14em] faint">{{ storyDate(other.date) }}</p>
+                    <h3 class="mt-2 text-xl tracking-[-0.015em] leading-snug">{{ other.title }}</h3>
+                  </a>
+                @endforeach
+              </div>
+            </div>
+          </section>
+        @endif
+      @endif
+    </main>
+
+    <SiteFooter />
+  </body>
+</html>

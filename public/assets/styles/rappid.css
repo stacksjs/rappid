@@ -1,0 +1,421 @@
+/*
+ * rappid. theme tokens and the handful of primitives Crosswind utilities
+ * cannot express on their own.
+ *
+ * One strategy for colour: every surface, rule and text colour resolves
+ * through a custom property defined here, swapped under [data-theme="dark"].
+ * Layout, spacing and type stay in Crosswind utility classes at the call
+ * site. Nothing hard-codes a hex outside this file.
+ *
+ * The brand is monochrome. --accent exists for one job only: signalling live
+ * state (a drop that is open, a size that is nearly gone). It is never
+ * decoration.
+ */
+
+:root {
+  --page: #f4f4f2;
+  --surface: #ffffff;
+  --surface-sunken: #ebebe8;
+  --ink: #0d0d0d;
+  --ink-muted: #5a5a55;
+  --ink-faint: #63635e;
+  --line: #dcdcd8;
+  --line-strong: #0d0d0d;
+  --accent: #bf3218;
+  /* Text that sits ON an accent fill, not accent-coloured text. */
+  --accent-ink: #ffffff;
+  --invert-bg: #0d0d0d;
+  --invert-ink: #f7f7f5;
+  --panel-bg: #0d0d0d;
+  --panel-ink: #f7f7f5;
+  --panel-line: rgb(255 255 255 / 0.16);
+  --panel-muted: rgb(247 247 245 / 0.72);
+  --scrim: rgb(0 0 0 / 0.42);
+}
+
+/* No-JS and first-paint fallback. An explicit choice always wins. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --page: #0b0b0b;
+    --surface: #141414;
+    --surface-sunken: #080808;
+    --ink: #f2f2f0;
+    --ink-muted: #a3a39e;
+    --ink-faint: #93938e;
+    --line: #262624;
+    --line-strong: #f2f2f0;
+    --accent: #ff5334;
+    /* The dark accent is light enough that white on it fails AA; ink passes. */
+    --accent-ink: #0d0d0d;
+    --invert-bg: #f7f7f5;
+    --invert-ink: #0d0d0d;
+    --panel-bg: #171717;
+    --panel-ink: #f2f2f0;
+    --panel-line: rgb(255 255 255 / 0.12);
+    --panel-muted: rgb(242 242 240 / 0.66);
+    --scrim: rgb(0 0 0 / 0.55);
+  }
+}
+
+:root[data-theme='dark'] {
+  --page: #0b0b0b;
+  --surface: #141414;
+  --surface-sunken: #080808;
+  --ink: #f2f2f0;
+  --ink-muted: #a3a39e;
+  --ink-faint: #93938e;
+  --line: #262624;
+  --line-strong: #f2f2f0;
+  --accent: #ff5334;
+  --accent-ink: #0d0d0d;
+  --invert-bg: #f7f7f5;
+  --invert-ink: #0d0d0d;
+  --panel-bg: #171717;
+  --panel-ink: #f2f2f0;
+  --panel-line: rgb(255 255 255 / 0.12);
+  --panel-muted: rgb(242 242 240 / 0.66);
+  --scrim: rgb(0 0 0 / 0.55);
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
+
+body {
+  background: var(--page);
+  color: var(--ink);
+  font-family: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Semantic colour primitives. */
+.surface { background: var(--surface); }
+.surface-sunken { background: var(--surface-sunken); }
+.page-bg { background: var(--page); }
+.ink { color: var(--ink); }
+.muted { color: var(--ink-muted); }
+.faint { color: var(--ink-faint); }
+.accent { color: var(--accent); }
+.accent-bg { background: var(--accent); color: var(--accent-ink); }
+.rule { border-color: var(--line); }
+.rule-strong { border-color: var(--line-strong); }
+/*
+ * NOT named `.invert`: Crosswind owns that name for the `filter: invert()`
+ * utility, and a section carrying both got its dark panel filtered straight
+ * back to light. `.ink-panel` is the dark-on-light block.
+ */
+.ink-panel { background: var(--panel-bg); color: var(--panel-ink); }
+.panel-rule { border-color: var(--panel-line); }
+.panel-muted { color: var(--panel-muted); }
+
+/* On a panel, "solid" means the panel's own ink, not the page's. */
+.ink-panel .btn-on-panel {
+  background: var(--panel-ink);
+  color: var(--panel-bg);
+  border-color: var(--panel-ink);
+}
+
+.ink-panel .btn-on-panel:hover { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+
+.ink-panel .field {
+  color: var(--panel-ink);
+  border-bottom-color: var(--panel-line);
+}
+
+.ink-panel .field::placeholder { color: var(--panel-muted); }
+.mono { font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+/* Focus is visible everywhere, in one style, in both themes. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/*
+ * Buttons. Square corners, hairline rule, and a 1px push on press so the
+ * control feels physical. Contrast is checked in both themes: solid is
+ * ink-on-page inverted, outline is ink on the page it sits on.
+ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.9rem 1.5rem;
+  font-size: 0.875rem;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  border: 1px solid transparent;
+  transition: background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.12s ease-out;
+  white-space: nowrap;
+}
+
+.btn:active { transform: translateY(1px); }
+
+.btn-solid {
+  background: var(--invert-bg);
+  color: var(--invert-ink);
+  border-color: var(--invert-bg);
+}
+
+.btn-solid:hover { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+
+.btn-outline {
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--line-strong);
+}
+
+.btn-outline:hover { background: var(--invert-bg); color: var(--invert-ink); }
+
+.btn[disabled],
+.btn[aria-disabled='true'] {
+  border-color: var(--line);
+  background: transparent;
+  color: var(--ink-faint);
+  cursor: not-allowed;
+}
+
+.btn[disabled]:active,
+.btn[aria-disabled='true']:active { transform: none; }
+
+/*
+ * Fields. Label above, hairline underline, no placeholder-as-label. The
+ * placeholder sits at --ink-faint, which clears AA against both surfaces.
+ */
+.field {
+  width: 100%;
+  background: transparent;
+  color: var(--ink);
+  border: 0;
+  border-bottom: 1px solid var(--line-strong);
+  padding: 0.65rem 0;
+  font: inherit;
+  font-size: 0.9375rem;
+}
+
+.field::placeholder { color: var(--ink-muted); }
+.field:focus { outline: none; border-bottom-color: var(--accent); }
+.field:focus-visible { outline: none; }
+
+/*
+ * Link underline that grows from the left on hover. Used on nav items and
+ * inline links: it gives hover feedback without moving anything.
+ */
+.underlink {
+  position: relative;
+  display: inline-block;
+}
+
+.underlink::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  width: 100%;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.underlink:hover::after,
+.underlink[aria-current='page']::after { transform: scaleX(1); }
+
+@media (prefers-reduced-motion: reduce) {
+  .underlink::after { transition: none; }
+}
+
+/*
+ * Product card image: a slow zoom on hover, and a cross-fade to the second
+ * studio shot where one exists. Communicates "there is more to see here"
+ * without a gallery control on a grid tile.
+ */
+.tile-media { overflow: hidden; background: var(--surface-sunken); }
+
+.tile-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tile-media .tile-alt {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+}
+
+.tile:hover .tile-media img { transform: scale(1.03); }
+.tile:hover .tile-media .tile-alt { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tile-media img { transition: none; }
+  .tile:hover .tile-media img { transform: none; }
+  .tile:hover .tile-media .tile-alt { opacity: 0; }
+}
+
+/*
+ * Enter-on-scroll, as progressive enhancement.
+ *
+ * The hidden state is scoped to `html.js-reveal`, which the observer script
+ * adds to itself only once it has actually started observing. Content is
+ * therefore visible by default: if the script is blocked, fails, or the
+ * browser has no IntersectionObserver, nothing is left stranded at opacity 0.
+ *
+ * The per-item delay is a CSS custom property, so the stagger costs no timer.
+ */
+.js-reveal [data-reveal]:not(.is-revealed) .reveal-item {
+  opacity: 0;
+  transform: translateY(18px);
+}
+
+.reveal-item {
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: calc(var(--i, 0) * 70ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .js-reveal [data-reveal]:not(.is-revealed) .reveal-item { opacity: 1; transform: none; }
+  .reveal-item { transition: none; }
+}
+
+/* Horizontal rails scroll under the thumb without a visible scrollbar. */
+.rail {
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  /*
+   * Match the rail's own inline padding. Without it the browser snaps the
+   * first card flush to the scroll-port on load, scrolling the rail by
+   * exactly one padding width and clipping that card against the edge.
+   */
+  scroll-padding-inline-start: 1.25rem;
+}
+
+@media (min-width: 1024px) {
+  .rail { scroll-padding-inline-start: 2rem; }
+}
+
+.rail::-webkit-scrollbar { display: none; }
+.rail > * { scroll-snap-align: start; }
+
+/* Long-form reading measure and rhythm for stories and legal pages. */
+.prose p { max-width: 68ch; line-height: 1.75; }
+.prose p + p { margin-top: 1.25rem; }
+.prose h2 { margin-top: 2.75rem; margin-bottom: 0.75rem; }
+.prose ul { max-width: 68ch; margin-top: 1rem; }
+.prose li { line-height: 1.7; padding-left: 1.25rem; position: relative; }
+.prose li + li { margin-top: 0.5rem; }
+
+.prose li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.7em;
+  width: 0.5rem;
+  height: 1px;
+  background: var(--ink-faint);
+}
+
+/*
+ * Market pricing. Every price ships all three currencies and CSS reveals the
+ * one the visitor picked, so switching costs no request and no reflow of the
+ * page's data. The attribute is set before first paint alongside the theme.
+ */
+[data-market-price] { display: none; }
+:root[data-market='de'] [data-market-price='de'],
+:root[data-market='gb'] [data-market-price='gb'],
+:root[data-market='us'] [data-market-price='us'] { display: inline; }
+
+/* No attribute yet (script blocked): show the base currency rather than none. */
+:root:not([data-market]) [data-market-price='de'] { display: inline; }
+
+.market-pick { opacity: 0.5; transition: opacity 0.2s ease-out; }
+.market-pick:hover { opacity: 1; }
+
+:root[data-market='de'] .market-pick[data-market-pick='de'],
+:root[data-market='gb'] .market-pick[data-market-pick='gb'],
+:root[data-market='us'] .market-pick[data-market-pick='us'] {
+  opacity: 1;
+  color: var(--ink);
+}
+
+/*
+ * The theme toggle shows the mode it switches TO, never the current one.
+ * Selectors are scoped to the button so they outrank the `.block` utility on
+ * the icon itself, which is generated after this file loads.
+ */
+[data-theme-toggle] > .theme-icon-light { display: none; }
+:root[data-theme='dark'] [data-theme-toggle] > .theme-icon-dark { display: none; }
+:root[data-theme='dark'] [data-theme-toggle] > .theme-icon-light { display: block; }
+
+[x-cloak] { display: none !important; }
+
+/*
+ * stx wraps a component that owns client state in a scope <div>. That wrapper
+ * becomes the containing block for anything inside it, which silently breaks
+ * `position: sticky` on the header: the wrapper is only as tall as the header
+ * itself, so there is nowhere to stick to. `display: contents` removes the
+ * wrapper's box without removing the element, so the header sticks to the
+ * page the way the markup reads.
+ */
+body > div[data-stx-scope] { display: contents; }
+
+/* The picked size, stated in the same ink-on-page inversion as a solid button. */
+.chosen-size {
+  background: var(--invert-bg);
+  color: var(--invert-ink);
+  border-color: var(--invert-bg);
+}
+
+/* <summary> keeps its marker in Safari without this. */
+summary::-webkit-details-marker { display: none; }
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/*
+ * Accordion markers. Crosswind has no `group-open:` variant, so the open and
+ * closed icons are swapped here off the <details> element's own state rather
+ * than by a utility class that never generated.
+ */
+summary > .acc-open { display: none; }
+details[open] > summary > .acc-open { display: block; }
+details[open] > summary > .acc-closed { display: none; }
+
+/*
+ * `hidden` has to beat a display utility. Crosswind's `.flex` and the HTML
+ * attribute have the same specificity, and the utility sheet loads second, so
+ * without this a `hidden` element with `flex` on it stays visible.
+ */
+[hidden] { display: none !important; }
+
+/*
+ * The header sits above the page and its panels sit above the backdrop. Three
+ * levels, declared once, so nothing has to guess a z-index at the call site.
+ */
+header { z-index: 40; }
+header > div { position: relative; z-index: 2; }

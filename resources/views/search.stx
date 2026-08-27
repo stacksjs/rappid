@@ -1,0 +1,121 @@
+<script server>
+import { byAvailabilityThenNewest, products } from '../data/catalog'
+import { collections } from '../data/collections'
+import { stories } from '../data/stories'
+
+const q = typeof query !== 'undefined' ? query : {}
+const term = String(q.q ?? '').trim().toLowerCase()
+
+/*
+ * Matching is deliberately plain: title, tags, collection handles and the
+ * opening paragraph. Sixty-five products do not need an index, and a search
+ * that runs on the server works with JavaScript off and can be linked to.
+ */
+function matches(haystack: string[], needle: string): boolean {
+  return haystack.some(part => part.toLowerCase().includes(needle))
+}
+
+const hits = term
+  ? products
+      .filter(p => matches([p.title, p.intro, ...p.tags, ...p.collections], term))
+      .sort(byAvailabilityThenNewest)
+  : []
+
+const storyHits = term
+  ? stories.filter(s => matches([s.title, s.excerpt, s.author], term))
+  : []
+
+const collectionHits = term
+  ? collections.filter(c => matches([c.title, c.handle, c.blurb], term)).slice(0, 6)
+  : []
+
+const nothing = Boolean(term) && !hits.length && !storyHits.length && !collectionHits.length
+
+/* Offered when a search comes back empty, and as a starting point before one. */
+const suggestions = ['storm jacket', 'pace cap', 'tights', 'long sleeve', 'bandana', 'camo']
+
+const pageTitle = term ? `${term} - search - rappid.` : 'search - rappid.'
+const pageDescription = 'Search the rappid. range.'
+const canonicalPath = '/search'
+</script>
+<!DOCTYPE html>
+<html lang="en">
+  <head>@include('head')</head>
+  <body>
+    <SiteNav current="/search" />
+
+    <main id="main" class="max-w-[1500px] mx-auto px-5 lg:px-8 py-10 lg:py-16">
+      <form action="/search" method="get" role="search">
+        <label class="block text-xs mono uppercase tracking-[0.16em] faint mb-3" for="q">search</label>
+        <div class="flex items-end gap-4 max-w-3xl">
+          <input
+            id="q"
+            class="field text-2xl sm:text-3xl"
+            type="search"
+            name="q"
+            value="{{ term }}"
+            placeholder="storm jacket, pace cap, tights"
+            autocomplete="off"
+            autofocus
+          >
+          <button class="btn btn-solid shrink-0" type="submit">go</button>
+        </div>
+      </form>
+
+      @if(!term)
+        <div class="py-14">
+          <p class="text-sm muted">Try one of these.</p>
+          <div class="flex flex-wrap gap-2 mt-4">
+            @foreach(suggestions as suggestion)
+              <a class="btn btn-outline" href="/search?q={{ encodeURIComponent(suggestion) }}">{{ suggestion }}</a>
+            @endforeach
+          </div>
+        </div>
+      @elseif(nothing)
+        <div class="py-14 max-w-[52ch]">
+          <p class="text-2xl tracking-tight">nothing matched “{{ term }}”.</p>
+          <p class="mt-3 text-base muted">Sizes and colours are not searchable on their own. Try the piece instead, or start from a collection.</p>
+          <div class="flex flex-wrap gap-2 mt-6">
+            @foreach(suggestions as suggestion)
+              <a class="btn btn-outline" href="/search?q={{ encodeURIComponent(suggestion) }}">{{ suggestion }}</a>
+            @endforeach
+          </div>
+        </div>
+      @else
+        <p class="pt-10 pb-6 text-sm muted" role="status">
+          <span class="mono ink">{{ hits.length }}</span>
+          @if(hits.length === 1) piece @else pieces @endif
+          matching “{{ term }}”
+        </p>
+
+        @if(collectionHits.length)
+          <div class="flex flex-wrap gap-2 pb-8">
+            @foreach(collectionHits as collection)
+              <a class="btn btn-outline" href="/collections/{{ collection.handle }}">{{ collection.title }}</a>
+            @endforeach
+          </div>
+        @endif
+
+        @if(hits.length)
+          <ProductGrid :items="hits" />
+        @endif
+
+        @if(storyHits.length)
+          <section class="mt-16 pt-12 border-t rule">
+            <h2 class="text-2xl tracking-[-0.02em] mb-6">stories</h2>
+            <ul class="space-y-4">
+              @foreach(storyHits as story)
+                <li>
+                  <a class="text-lg ink underlink" href="/stories/{{ story.slug }}">{{ story.title }}</a>
+                  <p class="mt-1 text-sm muted max-w-[62ch]">{{ story.excerpt }}</p>
+                </li>
+              @endforeach
+            </ul>
+          </section>
+        @endif
+      @endif
+    </main>
+
+    <SiteFooter />
+  </body>
+</html>

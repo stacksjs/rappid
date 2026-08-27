@@ -1,0 +1,92 @@
+<script server>
+import { families, oneSizePieces } from '../data/size-availability'
+import { brand } from '../data/site'
+
+const pageTitle = 'sizes - rappid.'
+const pageDescription = 'Which sizes the rappid. range is cut in, and which are in stock right now across tops and bottoms.'
+const canonicalPath = '/sizing'
+
+const oneSize = oneSizePieces()
+</script>
+<!DOCTYPE html>
+<html lang="en">
+  <head>@include('head')</head>
+  <body>
+    <SiteNav current="/sizing" />
+
+    <main id="main" class="max-w-[1100px] mx-auto px-5 lg:px-8 py-12 lg:py-16">
+      <h1 class="text-4xl sm:text-5xl tracking-[-0.03em]">sizes</h1>
+      <p class="mt-4 text-base muted max-w-[60ch] leading-relaxed">
+        The range is cut in XS to XXL. The tables below are live: they count how many pieces in each family offer a size, and how many still have it in stock, so you can see at a glance whether yours is covered before opening a single product page.
+      </p>
+
+      {{-- Said plainly rather than filled in with plausible numbers. Garment
+        measurements are not published anywhere by the brand, and a size chart
+        that guesses is worse than no size chart. --}}
+      <div class="mt-8 p-5 border rule surface">
+        <p class="text-sm ink">Garment measurements are not published yet.</p>
+        <p class="mt-2 text-sm muted max-w-[62ch] leading-relaxed">
+          Until they are, the reliable route is to ask. Send the piece and your usual size to
+          <a class="ink underlink" href="mailto:info@rappid.run">info@rappid.run</a>
+          and you will get the flat measurements for it.
+        </p>
+      </div>
+
+      @foreach(families as family)
+        <section class="mt-14">
+          <div class="flex items-baseline justify-between gap-4">
+            <h2 class="text-2xl tracking-[-0.02em]">{{ family.title }}</h2>
+            <a class="text-sm ink underlink" href="/collections/{{ family.handle }}">shop {{ family.title }}</a>
+          </div>
+          <p class="mt-2 text-sm muted">Across {{ family.total }} sized pieces.</p>
+
+          <div class="mt-6 overflow-x-auto">
+            <table class="w-full min-w-[30rem] border-collapse text-sm">
+              <caption class="sr-only">{{ family.title }}: how many pieces offer each size and how many have it in stock</caption>
+              <thead>
+                <tr class="border-b rule-strong">
+                  <th class="text-left py-3 pr-4 text-xs mono uppercase tracking-[0.14em] faint font-normal" scope="col">size</th>
+                  <th class="text-right py-3 pl-4 text-xs mono uppercase tracking-[0.14em] faint font-normal" scope="col">pieces cut in it</th>
+                  <th class="text-right py-3 pl-4 text-xs mono uppercase tracking-[0.14em] faint font-normal" scope="col">in stock now</th>
+                </tr>
+              </thead>
+              <tbody>
+                @foreach(family.rows as row)
+                  <tr class="border-b rule">
+                    <th class="text-left py-3 pr-4 mono uppercase ink font-normal" scope="row">{{ row.size }}</th>
+                    <td class="text-right py-3 pl-4 mono tabular-nums muted">{{ row.offered }}</td>
+                    <td class="text-right py-3 pl-4 mono tabular-nums {{ row.inStock ? 'ink' : 'faint' }}">{{ row.inStock }}</td>
+                  </tr>
+                @endforeach
+              </tbody>
+            </table>
+          </div>
+        </section>
+      @endforeach
+
+      @if(oneSize.length)
+        <section class="mt-16 pt-12 border-t rule">
+          <h2 class="text-2xl tracking-[-0.02em]">sold in one size</h2>
+          <p class="mt-2 text-sm muted max-w-[54ch]">Caps, bandanas and carry. {{ oneSize.length }} pieces in the range have no size to choose.</p>
+          <ul class="flex flex-wrap gap-2 mt-5">
+            @foreach(oneSize as piece)
+              <li><a class="btn btn-outline" href="/products/{{ piece.handle }}">{{ piece.title }}</a></li>
+            @endforeach
+          </ul>
+        </section>
+      @endif
+
+      <section class="mt-16 pt-12 border-t rule">
+        <p class="text-base muted max-w-[58ch] leading-relaxed">
+          Between two sizes? You have {{ brand.returnDays }} days to send a piece back unworn, so ordering both and keeping the one that fits is a real option. Return postage is yours unless the piece arrived faulty or wrong.
+        </p>
+        <div class="flex flex-wrap gap-3 mt-6">
+          <a class="btn btn-outline" href="/returns">how returns work</a>
+          <a class="btn btn-outline" href="/contact">ask us</a>
+        </div>
+      </section>
+    </main>
+
+    <SiteFooter />
+  </body>
+</html>

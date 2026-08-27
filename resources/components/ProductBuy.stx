@@ -1,0 +1,187 @@
+<script server>
+import { brand, markets, priceIn } from '../data/site'
+
+/*
+ * The buy column. The old product page listed sizes without saying which
+ * were gone, so a runner picked one, pressed add, and only then found out.
+ * Here every size button states its own stock, and the add button cannot be
+ * pressed until one is chosen.
+ */
+const p = product
+const sizes = p.variants
+const only = isOneSize ? p.variants[0] : null
+const lowStock = !soldOut && !isOneSize && inStock.length > 0 && inStock.length <= 2
+const coverSrc = cover ? cover.thumb : ''
+
+/* Prices for the add button, which computes totals in script, not in CSS. */
+const eur = p.price
+</script>
+
+<script client>
+/*
+ * One signal: the chosen size. Everything else on this column is derived
+ * from it, including whether the add button is usable.
+ */
+const chosen = state('')
+
+function pick(size: string): void {
+  chosen.update(current => (current === size ? '' : size))
+}
+</script>
+
+<template>
+  <div>
+    <h1 class="text-3xl sm:text-4xl tracking-[-0.025em] leading-[1.08]">{{ p.title }}</h1>
+
+    <div class="flex items-baseline gap-3 mt-3">
+      <p class="text-xl ink"><Price :amount="p.price" /></p>
+      @if(soldOut)
+        <span class="text-xs mono uppercase tracking-wider faint">sold out</span>
+      @elseif(lowStock)
+        <span class="text-xs mono uppercase tracking-wider accent">{{ inStock.length }} sizes left</span>
+      @endif
+    </div>
+
+    @if(p.intro)
+      <p class="mt-6 text-base muted leading-relaxed">{{ p.intro }}</p>
+    @endif
+
+    {{-- Sizes. A sold-out size is shown, struck through and unpickable,
+      rather than hidden: knowing your size is gone is information. --}}
+    <div class="mt-8">
+      <div class="flex items-baseline justify-between gap-4 mb-3">
+        <p class="text-xs mono uppercase tracking-[0.14em] faint">
+          @if(isOneSize) size @else select size @endif
+        </p>
+        <a class="text-xs ink underlink" href="/sizing">size guide</a>
+      </div>
+
+      @if(isOneSize)
+        <p class="px-4 py-3 border rule text-sm mono uppercase tracking-wider inline-block {{ only.available ? 'ink' : 'faint line-through' }}">one size</p>
+      @else
+        <div class="grid grid-cols-3 sm:grid-cols-6 gap-2">
+          @foreach(sizes as variant)
+            @if(variant.available)
+              <button
+                type="button"
+                class="py-3 border rule text-sm mono uppercase tracking-wider ink transition-colors hover:opacity-70"
+                :class="chosen() === '{{ variant.size }}' ? 'chosen-size' : ''"
+                :aria-pressed="chosen() === '{{ variant.size }}' ? 'true' : 'false'"
+                @click="pick('{{ variant.size }}')"
+              >{{ variant.size }}</button>
+            @else
+              <span
+                class="py-3 border rule text-sm mono uppercase tracking-wider faint line-through text-center cursor-not-allowed"
+                aria-disabled="true"
+                title="{{ variant.size }} is sold out"
+              >{{ variant.size }}</span>
+            @endif
+          @endforeach
+        </div>
+      @endif
+    </div>
+
+    <div class="mt-6">
+      @if(soldOut)
+        <button class="btn btn-outline w-full" type="button" disabled>sold out</button>
+        <p class="mt-3 text-sm muted">Sizes from a closed drop do not always return. New drops are announced to the mailing list, and there is a sign-up at the bottom of this page.</p>
+      @elseif(isOneSize)
+        <button
+          class="btn btn-solid w-full"
+          type="button"
+          data-bag-add
+          data-handle="{{ p.handle }}"
+          data-title="{{ p.title }}"
+          data-price="{{ eur }}"
+          data-image="{{ coverSrc }}"
+          data-size="one size"
+        >add to bag</button>
+      @else
+        <button
+          class="btn btn-solid w-full"
+          type="button"
+          data-bag-add
+          data-handle="{{ p.handle }}"
+          data-title="{{ p.title }}"
+          data-price="{{ eur }}"
+          data-image="{{ coverSrc }}"
+          :data-size="chosen()"
+          :disabled="chosen() === '' ? true : false"
+        >add to bag</button>
+      @endif
+
+      <p class="mt-3 text-sm accent" data-bag-note hidden role="status"></p>
+    </div>
+
+    <p class="mt-6 text-sm muted">
+      Free shipping over €60, otherwise €5.49. Ships within three business days.
+      {{ brand.returnDays }} days to send it back unworn.
+      <a class="ink underlink" href="/returns">how returns work</a>
+    </p>
+
+    {{-- Detail. Split into the three questions people actually ask, each
+      openable on its own, rather than one paragraph of run-on copy. --}}
+    <div class="mt-10 border-t rule">
+      @if(p.body.length)
+        <details class="border-b rule">
+          <summary class="flex items-center justify-between gap-4 py-4 cursor-pointer text-sm ink list-none">
+            details
+            <i class="i-hugeicons-plus-sign w-4 h-4 acc-closed" aria-hidden="true"></i>
+            <i class="i-hugeicons-minus-sign w-4 h-4 acc-open" aria-hidden="true"></i>
+          </summary>
+          <div class="pb-5 prose">
+            @foreach(p.body as paragraph)
+              <p class="text-sm muted">{{ paragraph }}</p>
+            @endforeach
+          </div>
+        </details>
+      @endif
+
+      @if(p.material.length)
+        <details class="border-b rule">
+          <summary class="flex items-center justify-between gap-4 py-4 cursor-pointer text-sm ink list-none">
+            material
+            <i class="i-hugeicons-plus-sign w-4 h-4 acc-closed" aria-hidden="true"></i>
+            <i class="i-hugeicons-minus-sign w-4 h-4 acc-open" aria-hidden="true"></i>
+          </summary>
+          <ul class="pb-5 space-y-1.5">
+            @foreach(p.material as line)
+              <li class="text-sm muted">{{ line }}</li>
+            @endforeach
+          </ul>
+        </details>
+      @endif
+
+      @if(p.care.length)
+        <details class="border-b rule">
+          <summary class="flex items-center justify-between gap-4 py-4 cursor-pointer text-sm ink list-none">
+            care
+            <i class="i-hugeicons-plus-sign w-4 h-4 acc-closed" aria-hidden="true"></i>
+            <i class="i-hugeicons-minus-sign w-4 h-4 acc-open" aria-hidden="true"></i>
+          </summary>
+          <ul class="pb-5 space-y-1.5">
+            @foreach(p.care as line)
+              <li class="text-sm muted">{{ line }}</li>
+            @endforeach
+          </ul>
+        </details>
+      @endif
+
+      <details class="border-b rule">
+        <summary class="flex items-center justify-between gap-4 py-4 cursor-pointer text-sm ink list-none">
+          prices in your currency
+          <i class="i-hugeicons-plus-sign w-4 h-4 acc-closed" aria-hidden="true"></i>
+          <i class="i-hugeicons-minus-sign w-4 h-4 acc-open" aria-hidden="true"></i>
+        </summary>
+        <ul class="pb-5 space-y-1.5">
+          @foreach(markets as market)
+            <li class="text-sm muted flex justify-between max-w-xs">
+              <span>{{ market.label }}</span>
+              <span class="mono ink">{{ priceIn(p.price, market) }}</span>
+            </li>
+          @endforeach
+        </ul>
+      </details>
+    </div>
+  </div>
+</template>

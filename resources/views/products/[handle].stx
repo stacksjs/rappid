@@ -1,0 +1,117 @@
+<script server>
+import { byAvailabilityThenNewest, image, productByHandle, products, sizesInStock } from '../../data/catalog'
+import { collectionByHandle } from '../../data/collections'
+import { brand, markets, priceIn } from '../../data/site'
+
+const handle = String(params?.handle ?? '')
+const product = productByHandle(handle)
+
+/*
+ * Gallery frames are numbered here rather than in the template so the client
+ * scope can address them by index without depending on loop-index support.
+ */
+const frames = (product?.images ?? []).map((img, i) => ({
+  i,
+  full: image(img.src, 1100),
+  thumb: image(img.src, 220),
+}))
+
+const inStock = product ? sizesInStock(product) : []
+const isOneSize = (product?.variants.length ?? 0) === 1
+const soldOut = product ? !product.available : false
+
+/* The primary collection this piece belongs to, for the breadcrumb. */
+const home = product
+  ? product.collections.map(c => collectionByHandle(c)).find(c => c && !c.parent && c.handle !== 'all-products' && c.handle !== 'new-arrivals')
+  : undefined
+
+/* More from the same capsule, falling back to the newest of the range. */
+const capsule = product?.collections.find(c => c === 'last-soul-ultra-2026' || c === 'atv-collection')
+const related = product
+  ? products
+      .filter(p => p.handle !== product.handle && (capsule ? p.collections.includes(capsule) : true))
+      .sort(byAvailabilityThenNewest)
+      .slice(0, 4)
+  : []
+
+const pageTitle = product ? `${product.title} - rappid.` : 'not found - rappid.'
+const pageDescription = product ? (product.intro || `${product.title} from rappid.`) : 'That product is not in the range.'
+const canonicalPath = `/products/${handle}`
+const ogImage = frames[0]?.full ?? ''
+
+const jsonLd = product
+  ? JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'Product',
+      'name': product.title,
+      'description': product.intro,
+      'image': product.images.map(img => img.src),
+      'brand': { '@type': 'Brand', 'name': 'rappid.' },
+      'offers': {
+        '@type': 'AggregateOffer',
+        'priceCurrency': 'EUR',
+        'lowPrice': product.price,
+        'offerCount': product.variants.length,
+        'availability': product.available ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+      },
+    })
+  : ''
+</script>
+<!DOCTYPE html>
+<html lang="en">
+  <head>@include('head')</head>
+  <body>
+    <SiteNav current="/products/{{ handle }}" />
+
+    <main id="main">
+      @if(!product)
+        <div class="max-w-[1500px] mx-auto px-5 lg:px-8 py-24 lg:py-32">
+          <p class="text-xs mono uppercase tracking-[0.16em] faint">404</p>
+          <h1 class="mt-3 text-4xl sm:text-5xl tracking-[-0.025em]">that piece is not in the range.</h1>
+          <p class="mt-4 text-base muted max-w-[46ch]">It may have been part of a drop that has closed. The current range is here.</p>
+          <div class="flex flex-wrap gap-3 mt-8">
+            <a class="btn btn-solid" href="/collections/all-products">browse all products</a>
+            <a class="btn btn-outline" href="/collections/new-arrivals">new arrivals</a>
+          </div>
+        </div>
+      @else
+        <div class="max-w-[1500px] mx-auto px-5 lg:px-8">
+          <nav class="flex items-center gap-2 py-6 text-xs mono uppercase tracking-[0.12em] faint" aria-label="breadcrumb">
+            <a class="hover:ink transition-colors" href="/">home</a>
+            <span aria-hidden="true">/</span>
+            @if(home)
+              <a class="hover:ink transition-colors" href="/collections/{{ home.handle }}">{{ home.title }}</a>
+              <span aria-hidden="true">/</span>
+            @endif
+            <span class="ink">{{ product.title }}</span>
+          </nav>
+
+          <div class="grid lg:grid-cols-12 gap-8 lg:gap-14 pb-16 lg:pb-24">
+            <div class="lg:col-span-7">
+              <ProductGallery :frames="frames" :alt="product.title" />
+            </div>
+
+            <div class="lg:col-span-5 lg:sticky lg:top-24 lg:self-start">
+              <ProductBuy :product="product" :inStock="inStock" :isOneSize="isOneSize" :soldOut="soldOut" :cover="frames[0]" />
+            </div>
+          </div>
+        </div>
+
+        @if(related.length)
+          <section class="border-t rule py-14 lg:py-20" data-reveal>
+            <div class="max-w-[1500px] mx-auto px-5 lg:px-8">
+              <h2 class="text-2xl sm:text-3xl tracking-[-0.02em] mb-8 reveal-item">
+                @if(capsule) more from the {{ capsule === 'atv-collection' ? 'atv' : 'lsu' }} capsule. @else more from the range. @endif
+              </h2>
+              <div class="reveal-item">
+                <ProductGrid :items="related" />
+              </div>
+            </div>
+          </section>
+        @endif
+      @endif
+    </main>
+
+    <SiteFooter />
+  </body>
+</html>

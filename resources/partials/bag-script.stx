@@ -1,0 +1,197 @@
+{{-- The bag.
+
+  Plain inline script rather than an stx client scope, for the same reason as
+  the theme and market scripts in the head: it has to own one piece of state
+  that outlives any single component and is read by markup on three different
+  pages (the nav count, the product page's add button, the cart itself).
+
+  Storage is the only source of truth. Every mutation writes, then re-renders
+  whatever bag-aware markup is on the page, so two tabs never disagree for
+  longer than a reload. Nothing here talks to a server: the bag is the
+  visitor's own, held in their browser until checkout takes over. --}}
+<script>
+  ;(function () {
+    var KEY = 'rappid-bag'
+
+    function read() {
+      try {
+        var raw = localStorage.getItem(KEY)
+        var parsed = raw ? JSON.parse(raw) : []
+        return Array.isArray(parsed) ? parsed.filter(valid) : []
+      }
+      catch { return [] }
+    }
+
+    function valid(line) {
+      return line && typeof line.handle === 'string' && typeof line.size === 'string'
+        && typeof line.price === 'number' && typeof line.qty === 'number' && line.qty > 0
+    }
+
+    function write(lines) {
+      try { localStorage.setItem(KEY, JSON.stringify(lines)) }
+      catch {}
+      render()
+    }
+
+    function keyOf(line) { return line.handle + '::' + line.size }
+
+    function add(line) {
+      var lines = read()
+      var found = null
+      for (var i = 0; i < lines.length; i++) {
+        if (keyOf(lines[i]) === keyOf(line)) { found = lines[i]; break }
+      }
+      if (found) found.qty = Math.min(found.qty + line.qty, 20)
+      else lines.push(line)
+      write(lines)
+    }
+
+    function setQty(key, qty) {
+      var lines = read().map(function (line) {
+        if (keyOf(line) !== key) return line
+        return { handle: line.handle, size: line.size, price: line.price, title: line.title, image: line.image, qty: qty }
+      }).filter(function (line) { return line.qty > 0 })
+      write(lines)
+    }
+
+    function money(cents) {
+      var market = document.documentElement.getAttribute('data-market') || 'de'
+      var table = { de: ['€', 1], gb: ['£', 0.87473], us: ['$', 1.18741] }
+      var entry = table[market] || table.de
+      return entry[0] + (Math.round(cents * entry[1]) / 100).toFixed(2)
+    }
+
+    /* Every bag-aware region on the page, re-rendered from storage. */
+    function render() {
+      var lines = read()
+      var count = lines.reduce(function (n, line) { return n + line.qty }, 0)
+      var cents = lines.reduce(function (n, line) { return n + Math.round(line.price * 100) * line.qty }, 0)
+
+      document.querySelectorAll('[data-bag-count]').forEach(function (el) {
+        el.textContent = count ? String(count) : ''
+        el.hidden = count === 0
+      })
+
+      document.querySelectorAll('[data-bag-total]').forEach(function (el) { el.textContent = money(cents) })
+
+      document.querySelectorAll('[data-bag-empty]').forEach(function (el) { el.hidden = count > 0 })
+      document.querySelectorAll('[data-bag-filled]').forEach(function (el) { el.hidden = count === 0 })
+
+      var list = document.querySelector('[data-bag-list]')
+      if (!list) return
+
+      list.textContent = ''
+      lines.forEach(function (line) {
+        var key = keyOf(line)
+        var row = document.createElement('li')
+        row.className = 'grid grid-cols-[80px_1fr_auto] sm:grid-cols-[110px_1fr_auto] gap-4 sm:gap-6 py-6 border-b rule items-start'
+
+        var media = document.createElement('a')
+        media.href = '/products/' + line.handle
+        media.className = 'surface-sunken block'
+        if (line.image) {
+          var img = document.createElement('img')
+          img.src = line.image
+          img.alt = line.title || line.handle
+          img.width = 220
+          img.height = 275
+          img.loading = 'lazy'
+          img.className = 'w-full aspect-[4/5] object-cover'
+          media.appendChild(img)
+        }
+
+        var body = document.createElement('div')
+        body.className = 'min-w-0'
+        var name = document.createElement('a')
+        name.href = '/products/' + line.handle
+        name.className = 'text-base ink underlink'
+        name.textContent = line.title || line.handle
+        var size = document.createElement('p')
+        size.className = 'mt-1.5 text-xs mono uppercase tracking-wider muted'
+        size.textContent = 'size ' + line.size
+        body.appendChild(name)
+        body.appendChild(size)
+
+        var controls = document.createElement('div')
+        controls.className = 'flex items-center gap-3 mt-4'
+        var stepper = document.createElement('div')
+        stepper.className = 'flex items-center border rule'
+        stepper.appendChild(step('minus', key, line.qty - 1, 'decrease quantity'))
+        var qty = document.createElement('span')
+        qty.className = 'px-3 text-sm mono tabular-nums'
+        qty.textContent = String(line.qty)
+        stepper.appendChild(qty)
+        stepper.appendChild(step('plus', key, line.qty + 1, 'increase quantity'))
+        controls.appendChild(stepper)
+
+        var remove = document.createElement('button')
+        remove.type = 'button'
+        remove.className = 'text-xs mono uppercase tracking-wider faint hover:ink transition-colors'
+        remove.textContent = 'remove'
+        remove.addEventListener('click', function () { setQty(key, 0) })
+        controls.appendChild(remove)
+        body.appendChild(controls)
+
+        var price = document.createElement('p')
+        price.className = 'text-base mono tabular-nums ink text-right whitespace-nowrap'
+        price.textContent = money(Math.round(line.price * 100) * line.qty)
+
+        row.appendChild(media)
+        row.appendChild(body)
+        row.appendChild(price)
+        list.appendChild(row)
+      })
+    }
+
+    function step(kind, key, next, label) {
+      var button = document.createElement('button')
+      button.type = 'button'
+      button.className = 'w-8 h-8 flex items-center justify-center ink hover:opacity-60 transition-opacity'
+      button.setAttribute('aria-label', label)
+      button.textContent = kind === 'plus' ? '+' : '-'
+      button.addEventListener('click', function () { setQty(key, Math.max(0, Math.min(20, next))) })
+      return button
+    }
+
+    /* Add buttons carry the line on data attributes, so the markup stays declarative. */
+    document.addEventListener('click', function (event) {
+      var button = event.target.closest ? event.target.closest('[data-bag-add]') : null
+      if (!button || button.disabled) return
+      var size = button.getAttribute('data-size') || ''
+      if (!size) return
+      add({
+        handle: button.getAttribute('data-handle') || '',
+        title: button.getAttribute('data-title') || '',
+        image: button.getAttribute('data-image') || '',
+        price: Number(button.getAttribute('data-price') || 0),
+        size: size,
+        qty: 1,
+      })
+      var note = document.querySelector('[data-bag-note]')
+      if (note) {
+        note.hidden = false
+        note.textContent = 'added ' + (button.getAttribute('data-title') || '') + ', size ' + size + '.'
+      }
+    })
+
+    window.addEventListener('storage', function (event) { if (event.key === KEY) render() })
+    document.addEventListener('rappid:market', render)
+
+    /*
+     * The stx client router swaps <main> in place, so the bag count and the
+     * cart list come back as markup this script has never filled in. Watching
+     * main's direct children catches that.
+     *
+     * Deliberately NOT `subtree: true`: render() writes into descendants of
+     * main, and a subtree watcher would see its own writes and re-render on
+     * every frame forever.
+     */
+    var main = document.querySelector('main')
+    if (main) {
+      var mutations = new MutationObserver(function () { render() })
+      mutations.observe(main, { childList: true })
+    }
+
+    render()
+  })()
+</script>

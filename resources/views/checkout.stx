@@ -1,0 +1,29 @@
+<script server>
+const pageTitle = 'checkout - rappid.'
+const pageDescription = 'Checkout is handled by the payment provider.'
+const canonicalPath = '/checkout'
+</script>
+<!DOCTYPE html>
+<html lang="en">
+  <head>@include('head')</head>
+  <body>
+    <SiteNav current="/checkout" />
+
+    <main id="main" class="max-w-[720px] mx-auto px-5 lg:px-8 py-16 lg:py-28">
+      <p class="text-xs mono uppercase tracking-[0.16em] faint">checkout</p>
+      <h1 class="mt-3 text-4xl sm:text-5xl tracking-[-0.03em] leading-[1.05]">payment is not connected in this build.</h1>
+      <p class="mt-5 text-base muted leading-relaxed">
+        Everything up to this point is live: the range, sizes, stock, currencies and your bag. Taking a card is the one step that needs a payment provider wired up, and this build has none, so there is nothing here that would pretend to charge you.
+      </p>
+      <p class="mt-4 text-base muted leading-relaxed">
+        Your bag is untouched and still in this browser.
+      </p>
+      <div class="flex flex-wrap gap-3 mt-8">
+        <a class="btn btn-solid" href="/cart">back to your bag</a>
+        <a class="btn btn-outline" href="/collections/all-products">keep browsing</a>
+      </div>
+    </main>
+
+    <SiteFooter />
+  </body>
+</html>

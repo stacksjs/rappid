@@ -1,0 +1,19 @@
+<script server>
+import { markets, priceIn } from '../data/site'
+
+/*
+ * All three market prices are rendered, and CSS shows the one matching the
+ * market on <html>. Switching currency then costs nothing at runtime: no
+ * refetch, no DOM rewrite, and no flash of the wrong price on first paint.
+ */
+const eur = Number(typeof amount !== 'undefined' ? amount : 0)
+const rendered = markets.map(m => ({ code: m.code, currency: m.currency, value: priceIn(eur, m) }))
+</script>
+
+<template>
+  <span class="mono tabular-nums">
+    @foreach(rendered as money)
+      <span data-market-price="{{ money.code }}">{{ money.value }}</span>
+    @endforeach
+  </span>
+</template>

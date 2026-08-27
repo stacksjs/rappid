@@ -1,0 +1,53 @@
+<script server>
+/*
+ * Every frame ships in the markup and the active one is revealed by opacity,
+ * so switching is instant and no frame is fetched twice. A single image needs
+ * no controls at all, so it gets none.
+ */
+const list = frames
+const label = alt
+</script>
+
+<script client>
+const active = state(0)
+
+function show(index: number): void {
+  active.set(index)
+}
+</script>
+
+<template>
+  <div>
+    <div class="relative aspect-[4/5] surface-sunken overflow-hidden">
+      @foreach(list as frame)
+        <img
+          class="absolute inset-0 w-full h-full object-cover transition-opacity duration-300"
+          :class="active() === {{ frame.i }} ? 'opacity-100' : 'opacity-0'"
+          src="{{ frame.full }}"
+          alt="{{ frame.i === 0 ? label : label + ', view ' + (frame.i + 1) }}"
+          width="1100"
+          height="1375"
+          @if(frame.i === 0) fetchpriority="high" @else loading="lazy" @endif
+          decoding="async"
+        >
+      @endforeach
+    </div>
+
+    @if(list.length > 1)
+      <div class="flex gap-3 mt-3" role="group" aria-label="product images">
+        @foreach(list as frame)
+          <button
+            type="button"
+            class="w-16 sm:w-20 shrink-0 surface-sunken transition-opacity"
+            :class="active() === {{ frame.i }} ? 'opacity-100' : 'opacity-45 hover:opacity-80'"
+            :aria-current="active() === {{ frame.i }} ? 'true' : 'false'"
+            aria-label="show image {{ frame.i + 1 }}"
+            @click="show({{ frame.i }})"
+          >
+            <img class="w-full aspect-[4/5] object-cover" src="{{ frame.thumb }}" alt="" width="220" height="275" loading="lazy" decoding="async" aria-hidden="true">
+          </button>
+        @endforeach
+      </div>
+    @endif
+  </div>
+</template>

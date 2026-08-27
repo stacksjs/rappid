@@ -1,0 +1,25 @@
+<script server>
+/*
+ * The shop grid. Four across on a wide screen, two on a phone, and hairlines
+ * between rather than card boxes: the garment is the object, the container
+ * is not.
+ */
+const list = items
+const columns = typeof cols !== 'undefined' ? String(cols) : '4'
+</script>
+
+<template>
+  @if(list.length === 0)
+    <div class="py-24 text-center">
+      <p class="text-lg ink">nothing here yet.</p>
+      <p class="mt-2 text-sm muted">This collection is between drops. The full range is still open.</p>
+      <a class="btn btn-outline mt-6" href="/collections/all-products">browse all products</a>
+    </div>
+  @else
+    <div class="grid grid-cols-2 gap-x-4 gap-y-10 sm:gap-x-6 sm:gap-y-14 {{ columns === '3' ? 'lg:grid-cols-3' : 'md:grid-cols-3 xl:grid-cols-4' }}">
+      @foreach(list as product)
+        <ProductCard :product="product" />
+      @endforeach
+    </div>
+  @endif
+</template>
