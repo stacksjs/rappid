@@ -27,25 +27,22 @@ const PORT_MAIN = 3190
 const PORT_API = 3191
 
 /**
- * State that must outlive a release.
+ * State that must outlive a release is NOT declared here, deliberately.
  *
- * Deploys are atomic: each activates a new release directory and the previous
- * one is pruned, so anything written inside a release is destroyed by the next
- * deploy. The SQLite database therefore lives outside the release tree and is
- * symlinked in, which is also what makes a rollback find the same data.
+ * Deploys are atomic: each activates a new release directory and prunes the
+ * previous one, so anything written inside a release is destroyed by the next
+ * deploy. `buddy deploy` handles that for the SQLite database on its own
+ * (`applyPersistentStatePaths`): it derives the file from each site's env,
+ * points every site of this project at one project-level target outside the
+ * release tree, and grants seeding rights only to the site that runs
+ * `migrate`. Its entry is applied LAST and overrides a hand-declared one, so a
+ * `sharedPaths` block naming a target here would read as authoritative and be
+ * silently discarded.
  *
- * The FILE is shared, not the `database/` directory: sharing the directory
- * would replace the release's `database/migrations/*.sql` too, so `migrate`
- * would find no migrations, report the database up to date, and serve a schema
- * that only ever got the framework's own tables.
+ * The upshot: `main` and `api` share one database by construction, it survives
+ * deploys and rollbacks, and the way to opt a site onto its OWN database is
+ * `DB_DATABASE_PATH` in that site's env, not a shared-path declaration.
  */
-const STATE_DIR = '/var/lib/rappid'
-
-function sharedState(seed: boolean) {
-  return [
-    { path: 'database/stacks.sqlite', target: `${STATE_DIR}/stacks.sqlite`, seed },
-  ]
-}
 
 /**
  * Cloud configuration — rappid.
@@ -168,9 +165,6 @@ export const tsCloud: TsCloudConfig = {
       domain: APP_DOMAIN,
       start: 'bun node_modules/@stacksjs/buddy/dist/serve-entry.js',
       port: PORT_MAIN,
-      // The main site runs the migration that creates the database, so it is
-      // the site that may seed the shared target.
-      sharedPaths: sharedState(true),
       // Markers between steps, kept deliberately: the remote log interleaves
       // commands with no delimiters, and a failing command's stderr attaches
       // itself to whichever command last flushed.
@@ -204,8 +198,8 @@ export const tsCloud: TsCloudConfig = {
       root: '.',
       start: 'bun node_modules/@stacksjs/actions/dist/serve/api.js',
       port: PORT_API,
-      // The same database file as main, and explicitly not the seeder.
-      sharedPaths: sharedState(false),
+      // No migrate here: `main` owns the schema, and running two migrations
+      // against one shared database is how a deploy races itself.
       preStart: ['bun install --frozen-lockfile'],
       env: {
         HOST: '127.0.0.1',
