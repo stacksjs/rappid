@@ -47,6 +47,11 @@ dist*
 **/database/*.sqlite-wal
 **/database/*.sqlite-shm
 
+# Migrations are source, not build output. A global `*.sql` ignore rule (common
+# in personal gitignores) would otherwise hide every newly generated migration,
+# so CI and the deploy would build a database without them.
+!database/migrations/*.sql
+
 # OS files
 .DS_Store
 .DS_STORE
