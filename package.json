@@ -76,7 +76,7 @@
   },
   "dependencies": {
     "pickier": "^0.1.65",
-    "stacks": "^0.75.463"
+    "stacks": "^0.75.628"
   },
   "workspaces": [
     "storage/framework",
